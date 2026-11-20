@@ -14,11 +14,16 @@
             --text: #1e293b; --muted: #64748b; --border: #e2e8f0;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background: var(--bg); color: var(--text); }
+        body { background: var(--bg); color: var(--text); overflow-x: hidden; }
         .hidden { display: none !important; }
         .app-layout { display: flex; min-height: 100vh; }
 
-        .sidebar { width: 255px; background: var(--navy); color: white; display: flex; flex-direction: column; flex-shrink: 0; }
+        /* SIDEBAR DESKTOP */
+        .sidebar {
+            width: 255px; background: var(--navy); color: white;
+            display: flex; flex-direction: column; flex-shrink: 0;
+            transition: transform 0.3s ease;
+        }
         .sidebar-brand-btn {
             width: 100%; background: transparent; border: none;
             border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -36,25 +41,50 @@
         .nav-link:hover { background: rgba(255,255,255,0.06); color: white; }
         .nav-link.active { background: var(--navy-light); color: white; border: 1px solid rgba(234, 179, 8, 0.5); }
 
+        /* BOTÓN MENÚ MÓVIL Y OVERLAY */
+        .menu-toggle-btn {
+            display: none; background: var(--navy); color: white; border: none;
+            width: 38px; height: 38px; border-radius: 8px; font-size: 1.25rem;
+            align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+        }
+        .sidebar-close-btn {
+            display: none; background: rgba(255,255,255,0.1); border: none; color: white;
+            width: 32px; height: 32px; border-radius: 6px; font-size: 1rem; cursor: pointer;
+            margin-left: auto;
+        }
+        .sidebar-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55);
+            z-index: 40; backdrop-filter: blur(2px);
+        }
+        .sidebar-overlay.active { display: block; }
+
+        /* TOPBAR */
         .content-wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-        .topbar { background: white; height: 62px; padding: 0 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-        .topbar h2 { font-size: 1.05rem; color: var(--navy); }
+        .topbar {
+            background: white; min-height: 62px; padding: 10px 24px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .topbar h2 { font-size: 1.05rem; color: var(--navy); line-height: 1.25; }
         .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
         .jornada-pill {
             background: #fef3c7; color: #92400e; border: 1px solid #f59e0b;
-            padding: 5px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+            padding: 6px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 700;
+            cursor: pointer; white-space: nowrap;
         }
         .date-picker-box {
             display: flex; align-items: center; gap: 6px; background: #f8fafc;
-            border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 8px;
+            border: 1px solid #cbd5e1; padding: 5px 10px; border-radius: 8px;
             font-size: 0.8rem; font-weight: 700; color: var(--navy);
         }
         .date-picker-box input {
             border: none; background: transparent; font-weight: 700; color: var(--navy);
             font-size: 0.82rem; cursor: pointer;
         }
+        .admin-label { font-size: 0.88rem; font-weight: 600; color: var(--navy); }
         .main-body { padding: 22px 24px; }
 
+        /* SECCIÓN CURSOS */
         .section-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
         .section-header-bar h3 { font-size: 0.96rem; color: var(--navy); }
         .section-header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -69,16 +99,16 @@
         .course-card-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 8px; }
         .course-card-top h4 { font-size: 1.02rem; color: var(--navy); word-break: break-word; }
         .course-card-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-        .course-badge-count { background: var(--navy); color: white; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
+        .course-badge-count { background: var(--navy); color: white; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
         .btn-icon-delete {
             background: #fee2e2; color: var(--red); border: 1px solid #fecaca;
-            border-radius: 6px; padding: 4px 8px; font-size: 0.76rem; font-weight: 700;
+            border-radius: 6px; padding: 5px 8px; font-size: 0.78rem; font-weight: 700;
             cursor: pointer; transition: 0.15s; line-height: 1.2;
         }
         .btn-icon-delete:hover { background: var(--red); color: white; border-color: var(--red); }
         .btn-icon-edit {
             background: #eff6ff; color: var(--blue); border: 1px solid #bfdbfe;
-            border-radius: 6px; padding: 4px 8px; font-size: 0.76rem; font-weight: 700;
+            border-radius: 6px; padding: 5px 8px; font-size: 0.78rem; font-weight: 700;
             cursor: pointer; transition: 0.15s; line-height: 1.2;
         }
         .btn-icon-edit:hover { background: var(--blue); color: white; border-color: var(--blue); }
@@ -86,6 +116,7 @@
         .stat-ok { color: var(--green); }
         .stat-warn { color: var(--red); }
 
+        /* BARRA DE HORAS ACADÉMICAS */
         .hours-bar {
             background: white; border: 1px solid var(--border); border-radius: 12px;
             padding: 15px 18px; margin-bottom: 20px;
@@ -98,8 +129,8 @@
         .hours-pills { display: flex; gap: 7px; flex-wrap: wrap; }
         .hour-btn {
             background: #f1f5f9; border: 1.5px solid #cbd5e1; color: var(--text);
-            padding: 7px 13px; border-radius: 8px; font-size: 0.8rem; font-weight: 700;
-            cursor: pointer; transition: 0.15s;
+            padding: 8px 13px; border-radius: 8px; font-size: 0.8rem; font-weight: 700;
+            cursor: pointer; transition: 0.15s; white-space: nowrap; flex-shrink: 0;
         }
         .hour-btn:hover { border-color: var(--navy); }
         .hour-btn.active { background: var(--navy); color: var(--gold); border-color: var(--navy); }
@@ -107,41 +138,51 @@
 
         .teacher-hour-strip {
             display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
-            background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 9px 14px;
+            background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px;
             font-size: 0.82rem;
         }
-        .teacher-input-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .teacher-input-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; }
         .teacher-input-wrap input {
-            border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 10px;
-            font-size: 0.82rem; font-weight: 600; color: var(--navy); min-width: 230px; background: white;
+            border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 10px;
+            font-size: 0.84rem; font-weight: 600; color: var(--navy); min-width: 230px; background: white; flex: 1;
         }
 
-        .section-card { background: white; border-radius: 12px; padding: 20px; border: 1px solid var(--border); overflow-x: auto; }
+        /* SECCIÓN TABLA Y BOTONES */
+        .section-card { background: white; border-radius: 12px; padding: 20px; border: 1px solid var(--border); }
         .top-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+        .top-actions h3 { font-size: 1rem; color: var(--navy); }
+        .top-actions-btns { display: flex; gap: 8px; flex-wrap: wrap; }
         .filters { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-        .filters input, .filters select { padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; }
+        .filters input, .filters select { padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.86rem; background: white; }
         .filters input { flex: 1; min-width: 220px; }
 
-        .btn-gold { background: var(--gold); color: var(--navy); border: none; padding: 10px 16px; border-radius: 6px; font-weight: 700; cursor: pointer; }
+        .btn-gold, .btn-navy, .btn-outline, .btn-gmail, .btn-whatsapp {
+            padding: 9px 15px; border-radius: 6px; font-weight: 700; cursor: pointer;
+            font-size: 0.84rem; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-gold { background: var(--gold); color: var(--navy); border: none; }
         .btn-gold:hover { background: var(--gold-hover); }
-        .btn-navy { background: var(--navy); color: white; border: none; padding: 9px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-navy { background: var(--navy); color: white; border: none; font-weight: 600; }
         .btn-navy:hover { background: var(--navy-light); }
-        .btn-outline { background: white; border: 1px solid #cbd5e1; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .btn-outline { background: white; border: 1px solid #cbd5e1; font-weight: 600; color: var(--text); }
         .btn-outline:hover { background: #f8fafc; }
-        .btn-gmail {
-            background: #ea4335; color: white; border: none; padding: 9px 15px; border-radius: 6px;
-            font-weight: 700; cursor: pointer; font-size: 0.83rem; display: inline-flex; align-items: center; gap: 6px;
-        }
+        .btn-gmail { background: #ea4335; color: white; border: none; font-size: 0.83rem; }
         .btn-gmail:hover { background: #c5221f; }
-        .btn-whatsapp {
-            background: #16a34a; color: white; border: none; padding: 9px 15px; border-radius: 6px;
-            font-weight: 700; cursor: pointer; font-size: 0.83rem; display: inline-flex; align-items: center; gap: 6px;
-        }
+        .btn-whatsapp { background: #16a34a; color: white; border: none; font-size: 0.83rem; }
         .btn-whatsapp:hover { background: #15803d; }
 
+        /* TABLA RESPONSIVE */
+        .mobile-scroll-hint {
+            display: none; font-size: 0.75rem; color: var(--muted); margin-bottom: 8px; text-align: right;
+        }
+        .table-wrap {
+            overflow-x: auto; -webkit-overflow-scrolling: touch;
+            border: 1px solid var(--border); border-radius: 8px;
+        }
         table { width: 100%; border-collapse: collapse; min-width: 940px; }
-        th { background: var(--navy); color: white; text-align: left; padding: 12px; font-size: 0.82rem; }
+        th { background: var(--navy); color: white; text-align: left; padding: 12px; font-size: 0.82rem; white-space: nowrap; }
         td { padding: 11px 12px; border-bottom: 1px solid var(--border); font-size: 0.86rem; vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
         tr:hover td { background: #f8fafc; }
 
         .student-name-link {
@@ -152,11 +193,11 @@
         }
         .student-name-link:hover { color: var(--crimson); text-decoration-color: var(--crimson); }
 
-        .status-btn-group { display: flex; gap: 5px; flex-wrap: wrap; }
+        .status-btn-group { display: flex; gap: 5px; flex-wrap: nowrap; }
         .st-btn {
             border: 1.5px solid #cbd5e1; background: white; color: #475569;
-            padding: 5px 9px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;
-            cursor: pointer; transition: 0.15s;
+            padding: 6px 9px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;
+            cursor: pointer; transition: 0.15s; white-space: nowrap;
         }
         .st-btn:hover { background: #f1f5f9; }
         .st-btn.active-Presente { background: #dcfce7; border-color: #16a34a; color: #166534; }
@@ -167,7 +208,7 @@
         .btn-novedad {
             background: #eff6ff; border: 1px solid #93c5fd; color: #1d4ed8;
             padding: 6px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 700;
-            cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+            cursor: pointer; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
         }
         .btn-novedad:hover { background: #dbeafe; }
         .btn-novedad.has-notes { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
@@ -176,15 +217,24 @@
             max-width: 195px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px;
         }
 
-        .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
-        .modal-card { background: white; width: 100%; max-width: 560px; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.3); max-height: 92vh; display: flex; flex-direction: column; }
-        .modal-header { background: var(--navy); color: white; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-        .modal-header h3 { font-size: 0.95rem; }
+        /* MODALES RESPONSIVE */
+        .modal-backdrop {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 100; padding: 16px; overflow-y: auto;
+        }
+        .modal-card {
+            background: white; width: 100%; max-width: 560px; border-radius: 12px;
+            overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            max-height: 92vh; display: flex; flex-direction: column;
+        }
+        .modal-header { background: var(--navy); color: white; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; gap: 10px; }
+        .modal-header h3 { font-size: 0.95rem; line-height: 1.3; }
         .modal-body { padding: 18px 20px; overflow-y: auto; }
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 4px; color: var(--navy); }
         .form-group input, .form-group select, .form-group textarea {
-            width: 100%; padding: 9px 11px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.88rem;
+            width: 100%; padding: 9px 11px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 16px; /* Evita zoom en iOS */
         }
         .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; flex-shrink: 0; background: white; }
 
@@ -199,7 +249,7 @@
         .note-entry-meta { font-size: 0.72rem; color: var(--muted); font-weight: 700; margin-bottom: 3px; }
 
         .alert-detail-box { background: #fff5f5; border: 1px solid #fecaca; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
-        .alert-detail-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
+        .alert-detail-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
         .tag-critica { background: var(--red); color: white; font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; }
         .tag-normal { background: var(--navy); color: var(--gold); font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; }
         .alert-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; font-size: 0.84rem; }
@@ -215,50 +265,124 @@
         .notify-box label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--navy); margin-bottom: 5px; }
         .notify-box input[type="email"] {
             width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px;
-            font-size: 0.84rem; color: var(--navy); font-weight: 600; margin-bottom: 10px; background: white;
+            font-size: 16px; color: var(--navy); font-weight: 600; margin-bottom: 10px; background: white;
         }
         .notify-box textarea {
             width: 100%; padding: 9px 10px; border: 1px solid #cbd5e1; border-radius: 6px;
-            font-size: 0.82rem; line-height: 1.45; color: var(--text); resize: vertical;
+            font-size: 16px; line-height: 1.45; color: var(--text); resize: vertical;
         }
         .notify-status { font-size: 0.76rem; color: var(--green); font-weight: 700; margin-top: 6px; display: none; }
+
+        /* =========================================================
+           MEDIA QUERIES PARA TABLETS Y CELULARES
+           ========================================================= */
+        @media (max-width: 900px) {
+            .menu-toggle-btn { display: flex; }
+            .sidebar-close-btn { display: inline-flex; align-items: center; justify-content: center; }
+
+            .sidebar {
+                position: fixed; top: 0; left: 0; bottom: 0; z-index: 50;
+                transform: translateX(-100%); box-shadow: 4px 0 20px rgba(0,0,0,0.25);
+            }
+            .sidebar.open { transform: translateX(0); }
+
+            .admin-label { display: none; }
+            .mobile-scroll-hint { display: block; }
+        }
+
+        @media (max-width: 600px) {
+            .topbar { padding: 10px 14px; }
+            .topbar h2 { font-size: 0.94rem; }
+            .topbar-right { width: 100%; justify-content: space-between; gap: 8px; }
+            .date-picker-box { padding: 4px 8px; }
+            .date-picker-box input { font-size: 16px; } /* Evita zoom iOS */
+
+            .main-body { padding: 14px; }
+
+            /* Botones de cabecera de cursos */
+            .section-header-bar { flex-direction: column; align-items: stretch; }
+            .section-header-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+            .section-header-actions button { width: 100%; padding: 9px 8px; font-size: 0.8rem; }
+
+            /* Tarjetas de cursos en 2 columnas */
+            .courses-cards-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .course-card { padding: 12px; }
+            .course-card-top { flex-direction: column; align-items: flex-start; gap: 6px; }
+            .course-card-actions { width: 100%; justify-content: space-between; }
+
+            /* Horas académicas deslizables horizontalmente */
+            .hours-bar { padding: 12px; }
+            .hours-pills {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                width: 100%;
+                padding-bottom: 4px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .teacher-input-wrap { flex-direction: column; align-items: stretch; width: 100%; }
+            .teacher-input-wrap input { min-width: 100%; font-size: 16px; }
+
+            /* Tabla y filtros */
+            .section-card { padding: 14px; }
+            .top-actions { flex-direction: column; align-items: stretch; }
+            .top-actions-btns { flex-direction: column; width: 100%; }
+            .top-actions-btns button { width: 100%; padding: 11px; }
+
+            .filters { flex-direction: column; gap: 8px; }
+            .filters input, .filters select { width: 100%; min-width: 100%; font-size: 16px; }
+
+            /* Modales */
+            .alert-detail-grid { grid-template-columns: 1fr; gap: 6px; }
+            .modal-body { padding: 14px; }
+            .modal-footer { flex-direction: column-reverse; padding: 12px 14px; }
+            .modal-footer button { width: 100%; padding: 11px; }
+        }
     </style>
 </head>
 <body>
+    <!-- Fondo oscuro para cerrar menú en móvil -->
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar(false)"></div>
+
     <div class="app-layout">
-        <aside class="sidebar">
-            <button type="button" class="sidebar-brand-btn" onclick="cerrarSesion()">
-                <img src="uefld.webp" alt="Escudo U.E.F. La Dolorosa" class="brand-logo">
-                <div>
-                    <h3>U.E.F. LA DOLOROSA</h3>
-                    <small>Fiscomisional · Admin</small>
-                </div>
-            </button>
+        <aside id="sidebar" class="sidebar">
+            <div style="display:flex; align-items:center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-right: 12px;">
+                <button type="button" class="sidebar-brand-btn" style="border-bottom:none;" onclick="cerrarSesion()">
+                    <img src="uefld.webp" alt="Escudo U.E.F. La Dolorosa" class="brand-logo">
+                    <div>
+                        <h3>U.E.F. LA DOLOROSA</h3>
+                        <small>Fiscomisional · Admin</small>
+                    </div>
+                </button>
+                <button type="button" class="sidebar-close-btn" onclick="toggleSidebar(false)" aria-label="Cerrar menú">✕</button>
+            </div>
 
             <div class="menu-section-title">MENÚ PRINCIPAL</div>
             <nav class="sidebar-nav">
-                <a href="dashboard.html" class="nav-link"><span> DASHBOARD</span></a>
-                <a href="cursos.html" class="nav-link active"><span> CURSOS / BASE DATOS</span></a>
-                <a href="novedades.html" class="nav-link"><span> HISTORIAL POR CURSOS</span></a>
+                <a href="dashboard.html" class="nav-link"><span>📊 DASHBOARD</span></a>
+                <a href="cursos.html" class="nav-link active"><span>🗄️ CURSOS / BASE DATOS</span></a>
+                <a href="novedades.html" class="nav-link"><span>📋 HISTORIAL POR CURSOS</span></a>
             </nav>
         </aside>
 
         <div class="content-wrapper">
             <header class="topbar">
-                <h2> CURSOS Y CONTROL POR HORA ACADÉMICA</h2>
+                <div class="topbar-left">
+                    <button type="button" class="menu-toggle-btn" onclick="toggleSidebar(true)" aria-label="Abrir menú">☰</button>
+                    <h2>CURSOS Y CONTROL POR HORA</h2>
+                </div>
                 <div class="topbar-right">
                     <div class="date-picker-box">
-                        <span> Fecha:</span>
+                        <span>📅 Fecha:</span>
                         <input type="date" id="fecha-control" onchange="onDateChange()">
                     </div>
                     <button id="badge-jornada" class="jornada-pill" onclick="alternarJornada()">☀️ Jornada Matutina</button>
-                    <span style="font-size:0.88rem;font-weight:600;color:var(--navy);">Rectorado / Admin</span>
+                    <span class="admin-label">Rectorado / Admin</span>
                 </div>
             </header>
 
             <main class="main-body">
                 <div class="section-header-bar">
-                    <h3 id="titulo-cursos-seccion"> Cursos de la Sección Matutina</h3>
+                    <h3 id="titulo-cursos-seccion">Cursos de la Sección Matutina</h3>
                     <div class="section-header-actions">
                         <button type="button" class="btn-navy" onclick="abrirModalCrearCurso()">+ Crear Curso</button>
                         <button type="button" class="btn-outline" onclick="seleccionarCursoCard('')">Ver todos los cursos</button>
@@ -268,12 +392,12 @@
 
                 <div class="hours-bar">
                     <div class="hours-top-row">
-                        <div class="hours-label"> Hora Académica (Asistencia y observaciones independientes por hora):</div>
+                        <div class="hours-label">🕒 Hora Académica (Asistencia y observaciones independientes por hora):</div>
                         <div class="hours-pills" id="hours-pills"></div>
                     </div>
                     <div class="teacher-hour-strip">
                         <div class="teacher-input-wrap">
-                            <strong> Docente de <span id="docente-hora-label">1ra Hora</span>:</strong>
+                            <strong>👨‍🏫 Docente de <span id="docente-hora-label">1ra Hora</span>:</strong>
                             <input type="text" id="docente-nombre-input" placeholder="Nombre del docente de esta hora..." onchange="guardarDocenteHora()">
                         </div>
                         <span style="font-size:0.78rem;color:var(--muted);font-weight:600;">
@@ -285,13 +409,10 @@
                 <div class="section-card">
                     <div class="top-actions">
                         <h3 id="titulo-tabla-activa">Nómina Estudiantil · 1ra Hora</h3>
-                        <button class="btn-gold" onclick="abrirModalNuevoEstudiante()">+ Registrar Estudiante</button>
-                    </div>
-                <div class="top-actions">
-                    <h3 id="titulo-tabla-activa">Nómina Estudiantil · 1ra Hora</h3>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                        <button type="button" class="btn-navy" onclick="abrirSelectorImportacion()"> Importar Excel / CSV</button>
-                        <input type="file" id="import-excel-input" accept=".csv,.xlsx,.xls" class="hidden" onchange="importarEstudiantesArchivo(event)">
+                        <div class="top-actions-btns">
+                            <button type="button" class="btn-navy" onclick="abrirSelectorImportacion()">📥 Importar Excel / CSV</button>
+                            <input type="file" id="import-excel-input" accept=".csv,.xlsx,.xls" class="hidden" onchange="importarEstudiantesArchivo(event)">
+                            <button type="button" class="btn-gold" onclick="abrirModalNuevoEstudiante()">+ Registrar Estudiante</button>
                         </div>
                     </div>
 
@@ -302,20 +423,23 @@
                         </select>
                     </div>
 
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Cédula</th>
-                                <th>Estudiante (Clic para Notificar)</th>
-                                <th>Curso</th>
-                                <th>Asistencia (<span id="th-hora-label">1ra Hora</span>)</th>
-                                <th>Faltas Acum.</th>
-                                <th>Observación (<span id="th-nov-hora-label">1ra Hora</span>)</th>
-                                <th style="text-align:center;">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="students-tbody"></tbody>
-                    </table>
+                    <div class="mobile-scroll-hint">↔ Desliza la tabla hacia los lados para tomar asistencia</div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Cédula</th>
+                                    <th>Estudiante (Clic para Notificar)</th>
+                                    <th>Curso</th>
+                                    <th>Asistencia (<span id="th-hora-label">1ra Hora</span>)</th>
+                                    <th>Faltas Acum.</th>
+                                    <th>Observación (<span id="th-nov-hora-label">1ra Hora</span>)</th>
+                                    <th style="text-align:center;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="students-tbody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </main>
         </div>
@@ -328,7 +452,7 @@
                 <h3>📚 Crear Nuevo Curso</h3>
                 <button type="button" style="background:none;border:none;color:white;cursor:pointer;font-size:1.1rem;" onclick="cerrarModalCrearCurso()">✕</button>
             </div>
-            <form id="course-form">
+            <form id="course-form" style="display:flex;flex-direction:column;overflow:hidden;">
                 <div class="modal-body">
                     <div class="form-group">
                         <label>Sección / Jornada</label>
@@ -357,7 +481,7 @@
                 <h3 id="student-modal-title">Registrar Estudiante</h3>
                 <button type="button" style="background:none;border:none;color:white;cursor:pointer;font-size:1.1rem;" onclick="cerrarModalEstudiante()">✕</button>
             </div>
-            <form id="student-form">
+            <form id="student-form" style="display:flex;flex-direction:column;overflow:hidden;">
                 <div class="modal-body">
                     <div class="form-group"><label>Cédula</label><input type="text" id="est-cedula" required maxlength="10"></div>
                     <div class="form-group"><label>Apellidos y Nombres</label><input type="text" id="est-nombres" required></div>
@@ -378,7 +502,7 @@
     <div id="novedad-modal" class="modal-backdrop hidden">
         <div class="modal-card">
             <div class="modal-header">
-                <h3 id="nov-modal-title"> Observación de Hora Académica</h3>
+                <h3 id="nov-modal-title">📝 Observación de Hora Académica</h3>
                 <button type="button" style="background:none;border:none;color:white;cursor:pointer;font-size:1.1rem;" onclick="cerrarModalNovedad()">✕</button>
             </div>
             <div class="modal-body">
@@ -391,7 +515,7 @@
                     </div>
                     <div class="modal-footer" style="padding:12px 0 0;border-top:none;">
                         <button type="button" class="btn-outline" onclick="cerrarModalNovedad()">Cerrar</button>
-                        <button type="submit" class="btn-navy"> Guardar solo en esta hora</button>
+                        <button type="submit" class="btn-navy">💾 Guardar solo en esta hora</button>
                     </div>
                 </form>
             </div>
@@ -402,19 +526,32 @@
     <div id="detalle-notificar-modal" class="modal-backdrop hidden">
         <div class="modal-card">
             <div class="modal-header">
-                <h3 id="det-modal-title"> REPORTE DEL DÍA • ESTUDIANTE</h3>
+                <h3 id="det-modal-title">🔔 REPORTE DEL DÍA • ESTUDIANTE</h3>
                 <button type="button" style="background:none;border:none;color:white;cursor:pointer;font-size:1.2rem;" onclick="document.getElementById('detalle-notificar-modal').classList.add('hidden')">✕</button>
             </div>
             <div class="modal-body" id="det-modal-body"></div>
             <div class="modal-footer">
                 <button type="button" class="btn-outline" onclick="document.getElementById('detalle-notificar-modal').classList.add('hidden')">Cerrar</button>
                 <button type="button" class="btn-gmail" id="det-btn-gmail" title="Redactar y enviar directamente desde Gmail">✉️ Enviar por Gmail</button>
-                <button type="button" class="btn-whatsapp" id="det-btn-wa"> WhatsApp</button>
+                <button type="button" class="btn-whatsapp" id="det-btn-wa">📲 WhatsApp</button>
             </div>
         </div>
     </div>
 
     <script>
+        /* Control del menú desplegable en móviles */
+        function toggleSidebar(abrir) {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (abrir) {
+                sidebar.classList.add('open');
+                overlay.classList.add('active');
+            } else {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('active');
+            }
+        }
+
         function cerrarSesion() {
             localStorage.removeItem('uefld_jornada');
             window.location.href = 'index.html';
@@ -538,10 +675,10 @@
 
         function actualizarUIJornada() {
             const badge = document.getElementById('badge-jornada');
-            badge.textContent = jornadaActual === 'Vespertina' ? ' Jornada Vespertina' : ' Jornada Matutina';
+            badge.textContent = jornadaActual === 'Vespertina' ? '🌇 Jornada Vespertina' : '☀️ Jornada Matutina';
 
             document.getElementById('titulo-cursos-seccion').textContent =
-                ` Cursos de la Sección ${jornadaActual}`;
+                `Cursos de la Sección ${jornadaActual}`;
 
             const cursos = cursosPorSeccion[jornadaActual] || [];
             const filterSelect = document.getElementById('course-filter');
@@ -559,7 +696,7 @@
             renderAll();
         }
 
-        // ================= GESTIÓN DE CURSOS (CREAR / ELIMINAR SIN HUÉRFANOS) =================
+        // ================= GESTIÓN DE CURSOS =================
         function abrirModalCrearCurso() {
             document.getElementById('curso-jornada').value = jornadaActual;
             document.getElementById('curso-nombre').value = '';
@@ -649,7 +786,7 @@
 
             const alumnosAsociados = students.filter(s => (s.jornada || 'Matutina') === jornadaActual && s.curso === curso);
             const msg = alumnosAsociados.length > 0
-                ? `¿Eliminar el curso "${curso}" (${jornadaActual})?\n\n Se eliminarán también los ${alumnosAsociados.length} estudiante(s) y todos sus registros de asistencia, observaciones e historial asociados.`
+                ? `¿Eliminar el curso "${curso}" (${jornadaActual})?\n\nSe eliminarán también los ${alumnosAsociados.length} estudiante(s) y todos sus registros de asistencia, observaciones e historial asociados.`
                 : `¿Eliminar el curso "${curso}" (${jornadaActual})?`;
 
             if (!confirm(msg)) return;
@@ -673,7 +810,7 @@
             renderAll();
         }
 
-        // ================= GESTIÓN DE ESTUDIANTES (CREAR / EDITAR / ELIMINAR) =================
+        // ================= GESTIÓN DE ESTUDIANTES =================
         function llenarSelectCursosEstudiante(cursoActual) {
             const cursos = cursosPorSeccion[jornadaActual] || [];
             document.getElementById('est-curso').innerHTML = cursos
@@ -822,7 +959,6 @@
             return [];
         }
 
-        // ================= RECOPILAR TODO LO QUE PASÓ EN EL DÍA (SIN IMPORTAR LA HORA) =================
         function obtenerEventosDelDia(est, fecha) {
             const eventos = [];
             const dayAsist = attendanceByDateHour[fecha] || {};
@@ -849,7 +985,6 @@
                 });
             });
 
-            // Incluir también registros del historial de ese día que no sean notificaciones ya enviadas
             const histDia = historialGlobal.filter(
                 h => h.estudianteId === est.id &&
                      h.fecha === fecha &&
@@ -939,10 +1074,10 @@
                 `Nómina ${cursoSeleccionado ? '· ' + cursoSeleccionado : '· Todos los cursos'} · ${formatearFechaLegible(fechaActual)} · ${horaActual}`;
 
             const estados = [
-                { key: 'Presente', label: ' Presente' },
-                { key: 'Atraso', label: ' Atraso' },
-                { key: 'Ausente', label: ' Ausente' },
-                { key: 'Fuga', label: ' Fuga' }
+                { key: 'Presente', label: '✓ Presente' },
+                { key: 'Atraso', label: '⏰ Atraso' },
+                { key: 'Ausente', label: '✕ Ausente' },
+                { key: 'Fuga', label: '🏃 Fuga' }
             ];
 
             const tbody = document.getElementById('students-tbody');
@@ -966,7 +1101,7 @@
                             </button><br>
                             <small style="color:var(--muted);">Rep: ${est.representante} · ${correoEst}</small>
                         </td>
-                        <td><span style="background:#e2e8f0;padding:3px 8px;border-radius:5px;font-weight:700;font-size:0.78rem;">${est.curso}</span></td>
+                        <td><span style="background:#e2e8f0;padding:3px 8px;border-radius:5px;font-weight:700;font-size:0.78rem;white-space:nowrap;">${est.curso}</span></td>
                         <td>
                             <div class="status-btn-group">
                                 ${estados.map(st => `
@@ -981,11 +1116,11 @@
                         <td><strong style="color:${est.faltas_acumuladas >= 3 ? 'var(--red)' : 'var(--navy)'};">${est.faltas_acumuladas}</strong></td>
                         <td>
                             <button type="button" class="btn-novedad ${obsEstaHora.length ? 'has-notes' : ''}" onclick="abrirModalNovedad(${est.id})">
-                                 Novedad (${obsEstaHora.length})
+                                📝 Novedad (${obsEstaHora.length})
                             </button>
                             ${ultimaObsHora ? `<span class="last-note-preview" title="${ultimaObsHora}">${ultimaObsHora}</span>` : ''}
                         </td>
-                        <td style="text-align:center;">
+                        <td style="text-align:center;white-space:nowrap;">
                             <button type="button" class="btn-icon-edit" title="Editar estudiante" onclick="abrirModalEditarEstudiante(${est.id})">✏️</button>
                             <button type="button" class="btn-icon-delete" title="Eliminar estudiante" onclick="eliminarEstudiante(${est.id})">🗑️</button>
                         </td>
@@ -1056,11 +1191,11 @@
 
             const resumenVisualHtml = eventosDia.length > 0
                 ? `<div class="day-events-summary">
-                     <strong> Todo lo registrado el ${fechaLegible} (todas las horas):</strong>
+                     <strong>📋 Todo lo registrado el ${fechaLegible} (todas las horas):</strong>
                      <ul>${eventosDia.map(ev => `<li>${ev.texto}</li>`).join('')}</ul>
                    </div>`
                 : `<div class="day-events-summary">
-                     <strong> Resumen del ${fechaLegible}:</strong>
+                     <strong>📋 Resumen del ${fechaLegible}:</strong>
                      <span>No se registraron faltas, atrasos, fugas ni observaciones en ninguna hora de esta fecha.</span>
                    </div>`;
 
