@@ -8,6 +8,7 @@ from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(BASE_DIR, "asistencia_dolorosa.db")
 HTML_FILE = os.path.join(BASE_DIR, "index.html")

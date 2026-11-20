@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso - Unidad Educativa Fiscomisional La Dolorosa</title>
+    <style>
+        :root {
+            --navy: #0b1e3b;
+            --navy-light: #16325c;
+            --crimson: #a61c2b;
+            --gold: #eab308;
+            --gold-hover: #ca8a04;
+        }
+        /* Corregido: selector universal * en lugar de guion */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body {
+            min-height: 100vh;
+            min-height: 100dvh; /* Se adapta correctamente cuando aparece el teclado en el celular */
+            background: linear-gradient(135deg, var(--navy) 55%, var(--crimson) 55%);
+            display: flex; align-items: center; justify-content: center;
+            padding: 16px;
+        }
+        .login-card {
+            background: rgba(11, 30, 59, 0.97); color: white; padding: 36px 32px;
+            border-radius: 14px; width: 100%; max-width: 420px; text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.45); border: 1px solid rgba(234, 179, 8, 0.35);
+        }
+        .escudo-login {
+            width: 92px; height: 92px; object-fit: cover; border-radius: 14px;
+            margin-bottom: 12px; border: 2px solid var(--gold);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+        }
+        .login-card h1 { font-size: 1.12rem; line-height: 1.35; }
+        .login-card h1 span { color: var(--gold); font-size: 1.42rem; display: block; margin-top: 2px; }
+        .subtitle { color: #cbd5e1; font-size: 0.85rem; margin: 6px 0 20px; }
+
+        /* SELECTOR DE JORNADA (MATUTINA / VESPERTINA) */
+        .jornada-label {
+            display: block; text-align: left; font-size: 0.82rem;
+            color: #cbd5e1; margin-bottom: 7px; font-weight: 600;
+        }
+        .jornada-group {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px;
+        }
+        .jornada-btn {
+            background: #1e293b; color: #cbd5e1; border: 1.5px solid #334155;
+            padding: 12px 10px; border-radius: 8px; font-size: 0.86rem; font-weight: 700;
+            cursor: pointer; transition: 0.2s; display: flex; align-items: center;
+            justify-content: center; gap: 6px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .jornada-btn:hover { border-color: var(--gold); color: white; }
+        .jornada-btn.active {
+            background: rgba(234, 179, 8, 0.16);
+            border-color: var(--gold);
+            color: var(--gold);
+            box-shadow: 0 0 0 1px var(--gold);
+        }
+
+        .form-group { text-align: left; margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.82rem; margin-bottom: 5px; color: #cbd5e1; }
+        .form-group input {
+            width: 100%; padding: 11px 12px; border-radius: 6px; border: 1px solid #334155;
+            background: #1e293b; color: white; font-size: 16px; /* Evita zoom automático en iPhone/Android */
+            outline: none; transition: border-color 0.2s;
+        }
+        .form-group input:focus {
+            border-color: var(--gold);
+        }
+        .btn-gold {
+            width: 100%; margin-top: 8px; background: var(--gold); color: var(--navy);
+            border: none; padding: 13px 12px; border-radius: 6px; font-weight: 800;
+            cursor: pointer; font-size: 0.92rem; letter-spacing: 0.3px;
+            transition: background 0.2s, transform 0.1s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-gold:hover { background: var(--gold-hover); }
+        .btn-gold:active { transform: scale(0.99); }
+        .error-msg { color: #fca5a5; font-size: 0.85rem; margin-top: 12px; display: none; }
+
+        /* =========================================================
+           ADAPTACIÓN PARA PANTALLAS DE CELULAR
+           ========================================================= */
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+                background: linear-gradient(155deg, var(--navy) 52%, var(--crimson) 52%);
+            }
+            .login-card {
+                padding: 26px 20px;
+                border-radius: 12px;
+            }
+            .escudo-login {
+                width: 78px;
+                height: 78px;
+                margin-bottom: 10px;
+            }
+            .login-card h1 {
+                font-size: 0.98rem;
+            }
+            .login-card h1 span {
+                font-size: 1.25rem;
+            }
+            .subtitle {
+                font-size: 0.8rem;
+                margin-bottom: 16px;
+            }
+            .jornada-btn {
+                padding: 11px 6px;
+                font-size: 0.8rem;
+            }
+            .btn-gold {
+                font-size: 0.86rem;
+                padding: 13px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <img src="uefld.webp" alt="Escudo U.E.F. La Dolorosa" class="escudo-login">
+        <h1>UNIDAD EDUCATIVA FISCOMISIONAL<span>"LA DOLOROSA"</span></h1>
+        <p class="subtitle">Control de Asistencia y Alertas Tempranas</p>
+
+        <form id="login-form">
+            <span class="jornada-label">Seleccione la Jornada:</span>
+            <div class="jornada-group">
+                <button type="button" class="jornada-btn active" id="btn-matutina" onclick="seleccionarJornada('Matutina')">
+                    MATUTINA
+                </button>
+                <button type="button" class="jornada-btn" id="btn-vespertina" onclick="seleccionarJornada('Vespertina')">
+                    VESPERTINA
+                </button>
+            </div>
+
+            <div class="form-group">
+                <label>Usuario Institucional</label>
+                <input type="text" id="login-user" value="admin" autocomplete="username" required>
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="login-pass" value="1234" autocomplete="current-password" required>
+            </div>
+            <button type="submit" class="btn-gold">INGRESAR A JORNADA MATUTINA</button>
+            <p class="error-msg" id="error-msg">Usuario o contraseña incorrectos</p>
+        </form>
+    </div>
+
+    <script>
+        let jornadaSeleccionada = 'Matutina';
+
+        function seleccionarJornada(jornada) {
+            jornadaSeleccionada = jornada;
+            document.getElementById('btn-matutina').classList.toggle('active', jornada === 'Matutina');
+            document.getElementById('btn-vespertina').classList.toggle('active', jornada === 'Vespertina');
+            document.querySelector('.btn-gold').textContent = `INGRESAR A JORNADA ${jornada.toUpperCase()}`;
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const usuario = document.getElementById('login-user').value.trim();
+            const clave = document.getElementById('login-pass').value.trim();
+
+            localStorage.setItem('uefld_jornada', jornadaSeleccionada);
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, clave, jornada: jornadaSeleccionada })
+                });
+                if (res.ok) {
+                    window.location.href = 'dashboard.html';
+                    return;
+                }
+            } catch (_) {}
+
+            if (usuario === 'admin' && clave === '1234') {
+                window.location.href = 'dashboard.html';
+            } else {
+                document.getElementById('error-msg').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyCndT8CvICr19cLsxmZhh6TCTAgQsL3sD4",
+    authDomain: "control-de-asistencia-dd885.firebaseapp.com",
+    projectId: "control-de-asistencia-dd885",
+    storageBucket: "control-de-asistencia-dd885.firebasestorage.app",
+    messagingSenderId: "1019957320433",
+    appId: "1:1019957320433:web:3b667e1df176bf498de750",
+    measurementId: "G-C6CPHVGQR8"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+</html>
