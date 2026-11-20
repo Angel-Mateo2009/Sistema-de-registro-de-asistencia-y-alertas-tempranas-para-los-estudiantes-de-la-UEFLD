@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - U.E.F. La Dolorosa</title>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-app.js"></script>
     <style>
         :root {
             --navy: #0b1e3b; --navy-light: #16325c; --crimson: #a61c2b;
@@ -283,7 +288,7 @@
                     <button id="badge-jornada" class="jornada-pill" onclick="alternarJornada()">☀️ Jornada Matutina</button>
                     <div class="admin-profile">
                         <div class="avatar-circle">AD</div>
-                        <span>Rectorado / Admin</span>
+                        <span>Registro escolar</span>
                     </div>
                 </div>
             </header>
@@ -365,7 +370,8 @@
             }
         }
 
-        function cerrarSesion() {
+        async function cerrarSesion() {
+            if (window.AlertasFirebase) await window.AlertasFirebase.signOut();
             localStorage.removeItem('uefld_jornada');
             window.location.href = 'index.html';
         }
@@ -377,17 +383,7 @@
 
         const CURSO_COLORES = ["#16a34a", "#2563eb", "#eab308", "#a61c2b", "#0d9488", "#7c3aed", "#ea580c", "#0284c7"];
 
-        const DEFAULT_STUDENTS = [
-            { id: 1, cedula: "0105487921", nombres: "MATEO VERA", curso: "10mo B", jornada: "Matutina", representante: "Jorge Vera", telefono: "0996547890", faltas_acumuladas: 4 },
-            { id: 2, cedula: "0107123456", nombres: "ANDRÉS TORRES", curso: "1ro BGU A", jornada: "Matutina", representante: "Elena Torres", telefono: "0998877665", faltas_acumuladas: 3 },
-            { id: 3, cedula: "0106987412", nombres: "SOFÍA MENDOZA", curso: "10mo A", jornada: "Matutina", representante: "María Mendoza", telefono: "0987654321", faltas_acumuladas: 2 },
-            { id: 4, cedula: "0105998877", nombres: "CAMILA ORTIZ", curso: "2do BGU A", jornada: "Matutina", representante: "Luis Ortiz", telefono: "0981122334", faltas_acumuladas: 0 },
-            { id: 5, cedula: "0106112233", nombres: "SEBASTIÁN LÓPEZ", curso: "3ro BGU A", jornada: "Matutina", representante: "Marco López", telefono: "0993322110", faltas_acumuladas: 1 },
-            { id: 6, cedula: "0108112233", nombres: "CARLOS JIMÉNEZ", curso: "10mo C", jornada: "Vespertina", representante: "Rosa Jiménez", telefono: "0991112233", faltas_acumuladas: 4 },
-            { id: 7, cedula: "0108445566", nombres: "VALERIA SALAZAR", curso: "1ro BGU B", jornada: "Vespertina", representante: "Pedro Salazar", telefono: "0984445566", faltas_acumuladas: 3 },
-            { id: 8, cedula: "0108990011", nombres: "DANIELA PAREDES", curso: "8vo A", jornada: "Vespertina", representante: "Lucía Paredes", telefono: "0976543210", faltas_acumuladas: 0 },
-            { id: 9, cedula: "0108776655", nombres: "MATEO GÓMEZ", curso: "9no A", jornada: "Vespertina", representante: "Raúl Gómez", telefono: "0989998877", faltas_acumuladas: 1 }
-        ];
+        const DEFAULT_STUDENTS = [];
 
         function getTodayISO() {
             const d = new Date();
@@ -422,6 +418,7 @@
         }
 
         let jornadaActual = localStorage.getItem('uefld_jornada') || 'Matutina';
+        let estudiantesFirebase = null;
 
         function getCursosPorSeccion() {
             try {
@@ -432,6 +429,7 @@
         }
 
         function getStudents() {
+            if (Array.isArray(estudiantesFirebase)) return estudiantesFirebase;
             try {
                 const s = JSON.parse(localStorage.getItem('uefld_students_v3'));
                 if (Array.isArray(s)) return s;
@@ -472,11 +470,30 @@
             renderAll();
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const hoy = getTodayISO();
             document.getElementById('dashboard-date').value = hoy;
             document.getElementById('dash-fecha-legible').textContent = formatearFechaLegible(hoy);
+            try {
+                const cloud = await window.AlertasFirebase.loadState({
+                    cursosPorSeccion: DEFAULT_CURSOS, students: DEFAULT_STUDENTS,
+                    attendanceByDateHour: {}, obsByDateHourStudent: {}, docentesPorHora: {}, historialGlobal: []
+                });
+                estudiantesFirebase = cloud.students;
+                document.querySelector('.admin-profile span').textContent = window.AlertasFirebase.isAdmin() ? 'Rectorado / Admin' : 'Registro escolar';
+            } catch (error) {
+                const note = document.createElement('div');
+                note.textContent = error.message || 'No se pudo conectar con Firebase.';
+                note.style.cssText = 'margin:16px;padding:12px;border-radius:8px;background:#fff7ed;color:#9a3412;font-weight:600;';
+                document.querySelector('.main-body')?.prepend(note);
+            }
             actualizarBadgeJornada();
+            renderAll();
+        });
+
+        window.addEventListener('firebase-data-updated', event => {
+            estudiantesFirebase = event.detail.students;
+            document.querySelector('.admin-profile span').textContent = window.AlertasFirebase.isAdmin() ? 'Rectorado / Admin' : 'Registro escolar';
             renderAll();
         });
 
@@ -486,9 +503,6 @@
             for (const h of horas) {
                 if (dayObj[h] && dayObj[h][estId]) return dayObj[h][estId];
             }
-            if (estId === 1 || estId === 6) return 'Ausente';
-            if (estId === 2 || estId === 7) return 'Fuga';
-            if (estId === 3 || estId === 9) return 'Atraso';
             return 'Presente';
         }
 
@@ -659,6 +673,14 @@
             const historial = getHistorialRecords();
             const histAlumno = historial.filter(h => h.estudianteId === est.id);
 
+            if (!window.AlertasFirebase.isAdmin()) {
+                document.getElementById('modal-title').textContent = `🔔 ALERTA • ${est.nombres.toUpperCase()}`;
+                document.getElementById('modal-body').innerHTML = `<div class="alert-detail-box"><h4>${est.nombres.toUpperCase()} (${est.curso})</h4><p>Jornada: ${est.jornada || jornadaActual}</p><p>Faltas acumuladas: ${est.faltas_acumuladas || 0}</p></div><div class="day-events-summary"><strong>Último registro:</strong><p>${histAlumno.length ? `${histAlumno[0].tipo} (${histAlumno[0].fecha} - ${histAlumno[0].horaClase}): ${histAlumno[0].detalle}` : 'Sin novedades históricas.'}</p></div>`;
+                document.getElementById('modal-footer').innerHTML = `<button class="btn-outline" onclick="document.getElementById('alert-modal').classList.add('hidden')">Cerrar</button><button class="btn-navy" onclick="window.location.href='cursos.html'">Ir a Cursos</button>`;
+                document.getElementById('alert-modal').classList.remove('hidden');
+                return;
+            }
+
             const ultimoEvento = histAlumno.length
                 ? `${histAlumno[0].tipo} (${histAlumno[0].fecha} - ${histAlumno[0].horaClase}): ${histAlumno[0].detalle}`
                 : `Acumula ${est.faltas_acumuladas} inasistencias registradas en la jornada ${est.jornada}.`;
@@ -710,9 +732,10 @@
                     horaRegistro: hora,
                     docente: 'Inspección General',
                     tipo: 'Observación Manual',
-                    detalle: `Notificación real enviada vía ${canal} a ${est.representante} (${est.telefono}): "${texto}"`
+                    detalle: `Notificación real enviada vía ${canal}: "${texto}"`
                 });
                 localStorage.setItem('uefld_historial_v3', JSON.stringify(historial));
+                window.AlertasFirebase.savePatch({ historialGlobal: historial }).catch(() => {});
                 document.getElementById('dash-notify-status').style.display = 'block';
                 renderAll();
             };

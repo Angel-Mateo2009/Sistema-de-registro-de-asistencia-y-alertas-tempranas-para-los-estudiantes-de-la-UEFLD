@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdministrator() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in [
+          'yeryckvalencia@gmail.com',
+          'sgranda@ladolorosa-loja.edu.ec',
+          'dannyalexandermas2009@gmail.com',
+          'angel.mateochamba2011@gmail.com'
+        ];
+    }
+
+    match /appData/public {
+      allow get: if true;
+      allow list: if false;
+      allow create: if isAdministrator();
+      allow update: if isAdministrator();
+      allow delete: if false;
+    }
+
+    match /appData/private {
+      allow read, write: if isAdministrator();
+      allow delete: if false;
+    }
+
+    match /attendanceDays/{day} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly([
+        'attendance', 'observations', 'teachers', 'history', 'updatedAt'
+      ]);
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'attendance', 'observations', 'teachers', 'history', 'updatedAt'
+      ]);
+      allow delete: if isAdministrator();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -49,6 +49,11 @@
         }
 
         async function importarEstudiantesArchivo(event) {
+            if (!window.AlertasFirebase || !window.AlertasFirebase.isAdmin()) {
+                alert('Solo los administradores autorizados pueden importar estudiantes.');
+                event.target.value = '';
+                return;
+            }
             const file = event.target.files && event.target.files[0];
             event.target.value = '';
             if (!file || !cursoDestinoImportacion) return;
@@ -137,6 +142,7 @@
                         representante: representante || 'No registrado',
                         correo: correo || '',
                         telefono: telefono || '',
+                        faltasBase: faltas_acumuladas,
                         faltas_acumuladas
                     });
                 });

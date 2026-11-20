@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cursos y Asistencia por Hora - U.E.F. La Dolorosa</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-app.js"></script>
     <script src="importar_cursos.js"></script>
     <style>
         :root {
@@ -16,6 +21,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background: var(--bg); color: var(--text); overflow-x: hidden; }
         .hidden { display: none !important; }
+        .admin-only.hidden { display: none !important; }
         .app-layout { display: flex; min-height: 100vh; }
 
         /* SIDEBAR DESKTOP */
@@ -384,7 +390,7 @@
                 <div class="section-header-bar">
                     <h3 id="titulo-cursos-seccion">Cursos de la Sección Matutina</h3>
                     <div class="section-header-actions">
-                        <button type="button" class="btn-navy" onclick="abrirModalCrearCurso()">+ Crear Curso</button>
+                        <button type="button" class="btn-navy admin-only hidden" onclick="abrirModalCrearCurso()">+ Crear Curso</button>
                         <button type="button" class="btn-outline" onclick="seleccionarCursoCard('')">Ver todos los cursos</button>
                     </div>
                 </div>
@@ -410,9 +416,11 @@
                     <div class="top-actions">
                         <h3 id="titulo-tabla-activa">Nómina Estudiantil · 1ra Hora</h3>
                         <div class="top-actions-btns">
-                            <button type="button" class="btn-navy" onclick="abrirSelectorImportacion()">📥 Importar Excel / CSV</button>
+                            <button type="button" class="btn-navy admin-only hidden" onclick="abrirSelectorImportacion()">📥 Importar Excel / CSV</button>
                             <input type="file" id="import-excel-input" accept=".csv,.xlsx,.xls" class="hidden" onchange="importarEstudiantesArchivo(event)">
-                            <button type="button" class="btn-gold" onclick="abrirModalNuevoEstudiante()">+ Registrar Estudiante</button>
+                            <button type="button" class="btn-outline admin-only hidden" onclick="document.getElementById('restore-backup-input').click()">♻️ Recuperar respaldo local</button>
+                            <input type="file" id="restore-backup-input" accept=".json,application/json" class="hidden" onchange="recuperarRespaldoLocal(event)">
+                            <button type="button" class="btn-gold admin-only hidden" onclick="abrirModalNuevoEstudiante()">+ Registrar Estudiante</button>
                         </div>
                     </div>
 
@@ -552,7 +560,8 @@
             }
         }
 
-        function cerrarSesion() {
+        async function cerrarSesion() {
+            if (window.AlertasFirebase) await window.AlertasFirebase.signOut();
             localStorage.removeItem('uefld_jornada');
             window.location.href = 'index.html';
         }
@@ -573,17 +582,7 @@
             Vespertina: ["8vo A", "9no A", "10mo C", "1ro BGU B", "2do BGU B"]
         };
 
-        const DEFAULT_STUDENTS = [
-            { id: 1, cedula: "0105487921", nombres: "MATEO VERA", curso: "10mo B", jornada: "Matutina", representante: "Jorge Vera", correo: "jorge.vera.rep@gmail.com", telefono: "0996547890", faltas_acumuladas: 4 },
-            { id: 2, cedula: "0107123456", nombres: "ANDRÉS TORRES", curso: "1ro BGU A", jornada: "Matutina", representante: "Elena Torres", correo: "elena.torres.rep@gmail.com", telefono: "0998877665", faltas_acumuladas: 3 },
-            { id: 3, cedula: "0106987412", nombres: "SOFÍA MENDOZA", curso: "10mo A", jornada: "Matutina", representante: "María Mendoza", correo: "maria.mendoza.rep@gmail.com", telefono: "0987654321", faltas_acumuladas: 2 },
-            { id: 4, cedula: "0105998877", nombres: "CAMILA ORTIZ", curso: "2do BGU A", jornada: "Matutina", representante: "Luis Ortiz", correo: "luis.ortiz.rep@gmail.com", telefono: "0981122334", faltas_acumuladas: 0 },
-            { id: 5, cedula: "0106112233", nombres: "SEBASTIÁN LÓPEZ", curso: "3ro BGU A", jornada: "Matutina", representante: "Marco López", correo: "marco.lopez.rep@gmail.com", telefono: "0993322110", faltas_acumuladas: 1 },
-            { id: 6, cedula: "0108112233", nombres: "CARLOS JIMÉNEZ", curso: "10mo C", jornada: "Vespertina", representante: "Rosa Jiménez", correo: "rosa.jimenez.rep@gmail.com", telefono: "0991112233", faltas_acumuladas: 4 },
-            { id: 7, cedula: "0108445566", nombres: "VALERIA SALAZAR", curso: "1ro BGU B", jornada: "Vespertina", representante: "Pedro Salazar", correo: "pedro.salazar.rep@gmail.com", telefono: "0984445566", faltas_acumuladas: 3 },
-            { id: 8, cedula: "0108990011", nombres: "DANIELA PAREDES", curso: "8vo A", jornada: "Vespertina", representante: "Lucía Paredes", correo: "lucia.paredes.rep@gmail.com", telefono: "0976543210", faltas_acumuladas: 0 },
-            { id: 9, cedula: "0108776655", nombres: "MATEO GÓMEZ", curso: "9no A", jornada: "Vespertina", representante: "Raúl Gómez", correo: "raul.gomez.rep@gmail.com", telefono: "0989998877", faltas_acumuladas: 1 }
-        ];
+        const DEFAULT_STUDENTS = [];
 
         function getTodayISO() {
             const d = new Date();
@@ -649,19 +648,99 @@
 
         function guardarTodoStorage() {
             localStorage.setItem('uefld_cursos_v3', JSON.stringify(cursosPorSeccion));
-            localStorage.setItem('uefld_students_v3', JSON.stringify(students));
+            localStorage.setItem('uefld_students_v3', JSON.stringify(students.map(s => ({
+                id: s.id, nombres: s.nombres, curso: s.curso, jornada: s.jornada,
+                faltasBase: Number(s.faltasBase) || 0, faltas_acumuladas: Number(s.faltas_acumuladas) || 0
+            }))));
             localStorage.setItem('uefld_asistencia_v3', JSON.stringify(attendanceByDateHour));
             localStorage.setItem('uefld_obs_por_hora_v3', JSON.stringify(obsByDateHourStudent));
             localStorage.setItem('uefld_docentes_v3', JSON.stringify(docentesPorHora));
             localStorage.setItem('uefld_historial_v3', JSON.stringify(historialGlobal));
+            if (window.AlertasFirebase) {
+                window.AlertasFirebase.saveState({
+                    cursosPorSeccion, students, attendanceByDateHour,
+                    obsByDateHourStudent, docentesPorHora, historialGlobal
+                }, { includeContacts: true }).catch(() => {});
+            }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        function aplicarPermisosAdministrador() {
+            const administrador = window.AlertasFirebase && window.AlertasFirebase.isAdmin();
+            document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !administrador));
+            const etiqueta = document.querySelector('.admin-label');
+            if (etiqueta) etiqueta.textContent = administrador ? 'Rectorado / Admin' : 'Registro de asistencia';
+        }
+
+        function mostrarErrorFirebase(mensaje) {
+            let aviso = document.getElementById('firebase-status');
+            if (!aviso) {
+                aviso = document.createElement('div');
+                aviso.id = 'firebase-status';
+                aviso.style.cssText = 'margin:0 0 16px;padding:12px 14px;border-radius:8px;background:#fff7ed;color:#9a3412;font-weight:600;';
+                document.querySelector('.main-body')?.prepend(aviso);
+            }
+            aviso.textContent = mensaje;
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('fecha-control').value = fechaActual;
+            try {
+                const cloud = await window.AlertasFirebase.loadState({
+                    cursosPorSeccion: DEFAULT_CURSOS, students: DEFAULT_STUDENTS,
+                    attendanceByDateHour: {}, obsByDateHourStudent: {},
+                    docentesPorHora: {}, historialGlobal: []
+                });
+                cursosPorSeccion = cloud.cursosPorSeccion;
+                students = cloud.students;
+                attendanceByDateHour = cloud.attendanceByDateHour;
+                obsByDateHourStudent = cloud.obsByDateHourStudent;
+                docentesPorHora = cloud.docentesPorHora;
+                historialGlobal = cloud.historialGlobal;
+            } catch (error) {
+                mostrarErrorFirebase(error.message || 'No se pudo conectar con la base de datos compartida.');
+            }
+            aplicarPermisosAdministrador();
             actualizarUIJornada();
             cargarDocenteDeHora();
             renderAll();
         });
+
+        window.addEventListener('firebase-data-updated', event => {
+            const cloud = event.detail;
+            cursosPorSeccion = cloud.cursosPorSeccion;
+            students = cloud.students;
+            attendanceByDateHour = cloud.attendanceByDateHour;
+            obsByDateHourStudent = cloud.obsByDateHourStudent;
+            docentesPorHora = cloud.docentesPorHora;
+            historialGlobal = cloud.historialGlobal;
+            aplicarPermisosAdministrador();
+            actualizarUIJornada();
+            renderAll();
+        });
+
+        async function recuperarRespaldoLocal(event) {
+            const file = event.target.files && event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            if (!window.AlertasFirebase.isAdmin()) return alert('Solo los administradores autorizados pueden recuperar respaldos.');
+            try {
+                const backup = JSON.parse(await file.text());
+                const cuenta = (backup.students || backup.estudiantes || []).length;
+                if (!confirm(`Se reemplazarán los cursos, estudiantes, asistencias e historial actuales de Firebase con el respaldo seleccionado (${cuenta} estudiantes). ¿Continuar?`)) return;
+                const cloud = await window.AlertasFirebase.importBackup(backup);
+                cursosPorSeccion = cloud.cursosPorSeccion;
+                students = cloud.students;
+                attendanceByDateHour = cloud.attendanceByDateHour;
+                obsByDateHourStudent = cloud.obsByDateHourStudent;
+                docentesPorHora = cloud.docentesPorHora;
+                historialGlobal = cloud.historialGlobal;
+                actualizarUIJornada();
+                renderAll();
+                alert('Respaldo recuperado y guardado en Firebase.');
+            } catch (error) {
+                alert(error.message || 'No se pudo leer o recuperar el respaldo.');
+            }
+        }
 
         function onDateChange() {
             const input = document.getElementById('fecha-control');
@@ -713,6 +792,7 @@
 
         document.getElementById('course-form').addEventListener('submit', (e) => {
             e.preventDefault();
+            if (!window.AlertasFirebase.isAdmin()) return alert('Solo los administradores autorizados pueden crear cursos.');
             const jornada = document.getElementById('curso-jornada').value;
             const nombre = document.getElementById('curso-nombre').value.trim();
             if (!nombre) return;
@@ -780,6 +860,7 @@
 
         function eliminarCursoPorIndice(event, idx) {
             event.stopPropagation();
+            if (!window.AlertasFirebase.isAdmin()) return alert('Solo los administradores autorizados pueden eliminar cursos.');
             const cursos = cursosPorSeccion[jornadaActual] || [];
             const curso = cursos[idx];
             if (!curso) return;
@@ -819,6 +900,7 @@
         }
 
         function abrirModalNuevoEstudiante() {
+            if (!window.AlertasFirebase.isAdmin()) return alert('Solo los administradores autorizados pueden registrar estudiantes.');
             if ((cursosPorSeccion[jornadaActual] || []).length === 0) {
                 alert(`Primero debes crear al menos un curso en la sección ${jornadaActual}.`);
                 abrirModalCrearCurso();
@@ -832,6 +914,7 @@
         }
 
         function abrirModalEditarEstudiante(id) {
+            if (!window.AlertasFirebase.isAdmin()) return alert('Solo los administradores autorizados pueden editar estudiantes.');
             const est = students.find(s => s.id === id);
             if (!est) return;
             editandoEstudianteId = est.id;
@@ -852,6 +935,7 @@
 
         document.getElementById('student-form').addEventListener('submit', (e) => {
             e.preventDefault();
+            if (!window.AlertasFirebase.isAdmin()) return alert('Solo los administradores autorizados pueden guardar estudiantes.');
             const datos = {
                 cedula: document.getElementById('est-cedula').value.trim(),
                 nombres: document.getElementById('est-nombres').value.trim().toUpperCase(),
@@ -870,7 +954,7 @@
                 const idx = students.findIndex(s => s.id === editandoEstudianteId);
                 if (idx !== -1) students[idx] = { ...students[idx], ...datos };
             } else {
-                students.push({ id: Date.now(), jornada: jornadaActual, faltas_acumuladas: 0, ...datos });
+                students.push({ id: Date.now(), jornada: jornadaActual, faltasBase: 0, faltas_acumuladas: 0, ...datos });
             }
 
             guardarTodoStorage();
@@ -880,6 +964,7 @@
         });
 
         function eliminarEstudiante(id) {
+            if (!window.AlertasFirebase.isAdmin()) return alert('Solo los administradores autorizados pueden eliminar estudiantes.');
             const est = students.find(s => s.id === id);
             if (!est) return;
 
@@ -1052,7 +1137,7 @@
                                 <h4>${curso}</h4>
                                 <div class="course-card-actions">
                                     <span class="course-badge-count">${alumnosCurso.length} est.</span>
-                                    <button type="button" class="btn-icon-delete" title="Eliminar curso" onclick="eliminarCursoPorIndice(event, ${idx})">🗑️</button>
+                                    ${window.AlertasFirebase.isAdmin() ? `<button type="button" class="btn-icon-delete" title="Eliminar curso" onclick="eliminarCursoPorIndice(event, ${idx})">🗑️</button>` : ''}
                                 </div>
                             </div>
                             <div class="course-mini-stats">
@@ -1066,7 +1151,7 @@
 
             const q = document.getElementById('search-input').value.toLowerCase();
             const filtrados = estSeccion.filter(e =>
-                (e.nombres.toLowerCase().includes(q) || e.cedula.includes(q)) &&
+                (e.nombres.toLowerCase().includes(q) || String(e.cedula || '').includes(q)) &&
                 (!cursoSeleccionado || e.curso === cursoSeleccionado)
             );
 
@@ -1090,16 +1175,14 @@
                 const estadoActual = getEstadoEnFechaYHora(est.id, fechaActual, horaActual);
                 const obsEstaHora = getObservacionesDeHora(est.id, fechaActual, horaActual);
                 const ultimaObsHora = obsEstaHora.length ? obsEstaHora[0].texto : '';
-                const correoEst = est.correo || `${est.representante.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '.')}@gmail.com`;
+                const adminView = window.AlertasFirebase.isAdmin();
+                const correoEst = est.correo || (est.representante ? `${est.representante.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '.')}@gmail.com` : '');
 
                 return `
                     <tr>
-                        <td>${est.cedula}</td>
+                        <td>${adminView ? (est.cedula || '') : ''}</td>
                         <td>
-                            <button type="button" class="student-name-link" onclick="abrirDetalleNotificacion(${est.id})" title="Clic para enviar todo lo ocurrido en el día">
-                                ${est.nombres}
-                            </button><br>
-                            <small style="color:var(--muted);">Rep: ${est.representante} · ${correoEst}</small>
+                            ${adminView ? `<button type="button" class="student-name-link" onclick="abrirDetalleNotificacion(${est.id})" title="Ver datos del representante y reporte diario">${est.nombres}</button><br><small style="color:var(--muted);">Rep: ${est.representante || 'No registrado'} ${correoEst ? '· ' + correoEst : ''}</small>` : `<strong>${est.nombres}</strong>`}
                         </td>
                         <td><span style="background:#e2e8f0;padding:3px 8px;border-radius:5px;font-weight:700;font-size:0.78rem;white-space:nowrap;">${est.curso}</span></td>
                         <td>
@@ -1120,10 +1203,7 @@
                             </button>
                             ${ultimaObsHora ? `<span class="last-note-preview" title="${ultimaObsHora}">${ultimaObsHora}</span>` : ''}
                         </td>
-                        <td style="text-align:center;white-space:nowrap;">
-                            <button type="button" class="btn-icon-edit" title="Editar estudiante" onclick="abrirModalEditarEstudiante(${est.id})">✏️</button>
-                            <button type="button" class="btn-icon-delete" title="Eliminar estudiante" onclick="eliminarEstudiante(${est.id})">🗑️</button>
-                        </td>
+                        <td style="text-align:center;white-space:nowrap;">${adminView ? `<button type="button" class="btn-icon-edit" title="Editar estudiante" onclick="abrirModalEditarEstudiante(${est.id})">✏️</button><button type="button" class="btn-icon-delete" title="Eliminar estudiante" onclick="eliminarEstudiante(${est.id})">🗑️</button>` : ''}</td>
                     </tr>
                 `;
             }).join('');
@@ -1136,15 +1216,10 @@
             const estadoPrevio = getEstadoEnFechaYHora(id, fechaActual, horaActual);
             if (estadoPrevio === nuevoEstado) return;
 
-            if ((nuevoEstado === 'Ausente' || nuevoEstado === 'Fuga') && estadoPrevio !== 'Ausente' && estadoPrevio !== 'Fuga') {
-                est.faltas_acumuladas += 1;
-            } else if ((estadoPrevio === 'Ausente' || estadoPrevio === 'Fuga') && (nuevoEstado === 'Presente' || nuevoEstado === 'Atraso')) {
-                est.faltas_acumuladas = Math.max(0, est.faltas_acumuladas - 1);
-            }
-
             if (!attendanceByDateHour[fechaActual]) attendanceByDateHour[fechaActual] = {};
             if (!attendanceByDateHour[fechaActual][horaActual]) attendanceByDateHour[fechaActual][horaActual] = {};
             attendanceByDateHour[fechaActual][horaActual][id] = nuevoEstado;
+            est.faltas_acumuladas = (Number(est.faltasBase) || 0) + window.AlertasFirebase.countAbsences(attendanceByDateHour, id);
 
             if (nuevoEstado !== 'Presente') {
                 const docente = document.getElementById('docente-nombre-input').value.trim() || 'Docente de turno';
@@ -1169,6 +1244,7 @@
         }
 
         function abrirDetalleNotificacion(id) {
+            if (!window.AlertasFirebase.isAdmin()) return alert('Solo los administradores autorizados pueden consultar datos del representante.');
             const est = students.find(s => s.id === id);
             if (!est) return;
 

@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Historial por Cursos - U.E.F. La Dolorosa</title>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-app.js"></script>
     <style>
         :root {
             --navy: #0b1e3b; --navy-light: #16325c; --crimson: #a61c2b;
@@ -244,7 +249,7 @@
                 </div>
                 <div class="topbar-right">
                     <button id="badge-jornada" class="jornada-pill" onclick="alternarJornada()">☀️ Jornada Matutina</button>
-                    <span class="admin-label">Rectorado / Admin</span>
+                    <span class="admin-label">Registro de asistencia</span>
                 </div>
             </header>
 
@@ -362,7 +367,8 @@
             }
         }
 
-        function cerrarSesion() {
+        async function cerrarSesion() {
+            if (window.AlertasFirebase) await window.AlertasFirebase.signOut();
             localStorage.removeItem('uefld_jornada');
             window.location.href = 'index.html';
         }
@@ -372,25 +378,9 @@
             Vespertina: ["8vo A", "9no A", "10mo C", "1ro BGU B", "2do BGU B"]
         };
 
-        const DEFAULT_STUDENTS = [
-            { id: 1, nombres: "MATEO VERA", curso: "10mo B", jornada: "Matutina" },
-            { id: 2, nombres: "ANDRÉS TORRES", curso: "1ro BGU A", jornada: "Matutina" },
-            { id: 3, nombres: "SOFÍA MENDOZA", curso: "10mo A", jornada: "Matutina" },
-            { id: 4, nombres: "CAMILA ORTIZ", curso: "2do BGU A", jornada: "Matutina" },
-            { id: 5, nombres: "SEBASTIÁN LÓPEZ", curso: "3ro BGU A", jornada: "Matutina" },
-            { id: 6, nombres: "CARLOS JIMÉNEZ", curso: "10mo C", jornada: "Vespertina" },
-            { id: 7, nombres: "VALERIA SALAZAR", curso: "1ro BGU B", jornada: "Vespertina" },
-            { id: 8, nombres: "DANIELA PAREDES", curso: "8vo A", jornada: "Vespertina" },
-            { id: 9, nombres: "MATEO GÓMEZ", curso: "9no A", jornada: "Vespertina" }
-        ];
+        const DEFAULT_STUDENTS = [];
 
-        const SEED_HISTORIAL = [
-            { id: 101, estudianteId: 2, estudiante: "ANDRÉS TORRES", curso: "1ro BGU A", jornada: "Matutina", fecha: "2026-11-18", horaClase: "3ra Hora", horaRegistro: "10:15", docente: "Ing. Roberto Cevallos (Física)", tipo: "Fuga", detalle: "No ingresó al laboratorio de Física después del receso." },
-            { id: 102, estudianteId: 1, estudiante: "MATEO VERA", curso: "10mo B", jornada: "Matutina", fecha: "2026-11-18", horaClase: "1ra Hora", horaRegistro: "07:35", docente: "Lic. Carlos Andrade (Matemática)", tipo: "Ausente", detalle: "Inasistencia sin justificación reportada a Inspección." },
-            { id: 103, estudianteId: 3, estudiante: "SOFÍA MENDOZA", curso: "10mo A", jornada: "Matutina", fecha: "2026-11-17", horaClase: "1ra Hora", horaRegistro: "07:20", docente: "Lic. Carlos Andrade (Matemática)", tipo: "Atraso", detalle: "Ingresó 15 minutos tarde con pase de portería." },
-            { id: 104, estudianteId: 6, estudiante: "CARLOS JIMÉNEZ", curso: "10mo C", jornada: "Vespertina", fecha: "2026-11-18", horaClase: "1ra Hora", horaRegistro: "13:15", docente: "Lic. Carlos Andrade (Matemática)", tipo: "Ausente", detalle: "Ausencia reiterada en jornada vespertina." },
-            { id: 105, estudianteId: 7, estudiante: "VALERIA SALAZAR", curso: "1ro BGU B", jornada: "Vespertina", fecha: "2026-11-17", horaClase: "2da Hora", horaRegistro: "14:40", docente: "Mgs. Patricia León (Lengua y Literatura)", tipo: "Fuga", detalle: "Abandonó el aula sin autorización en cambio de hora." }
-        ];
+        const SEED_HISTORIAL = [];
 
         function getTodayISO() {
             const d = new Date();
@@ -415,7 +405,7 @@
         }
 
         let historialGlobal = JSON.parse(localStorage.getItem('uefld_historial_v3'));
-        if (!Array.isArray(historialGlobal) || historialGlobal.length === 0) {
+        if (!Array.isArray(historialGlobal)) {
             historialGlobal = [...SEED_HISTORIAL];
             localStorage.setItem('uefld_historial_v3', JSON.stringify(historialGlobal));
         }
@@ -464,7 +454,26 @@
             renderHistorial();
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await window.AlertasFirebase.loadState({
+                    cursosPorSeccion: DEFAULT_CURSOS, students: DEFAULT_STUDENTS,
+                    attendanceByDateHour: {}, obsByDateHourStudent: {}, docentesPorHora: {}, historialGlobal: []
+                });
+                historialGlobal = JSON.parse(localStorage.getItem('uefld_historial_v3')) || [];
+                document.querySelector('.admin-label').textContent = window.AlertasFirebase.isAdmin() ? 'Rectorado / Admin' : 'Registro de asistencia';
+            } catch (error) {
+                const note = document.createElement('div');
+                note.textContent = error.message || 'No se pudo conectar con Firebase.';
+                note.style.cssText = 'margin:16px;padding:12px;border-radius:8px;background:#fff7ed;color:#9a3412;font-weight:600;';
+                document.querySelector('.main-body')?.prepend(note);
+            }
+            actualizarBadgeJornada();
+            renderHistorial();
+        });
+
+        window.addEventListener('firebase-data-updated', () => {
+            historialGlobal = JSON.parse(localStorage.getItem('uefld_historial_v3')) || [];
             actualizarBadgeJornada();
             renderHistorial();
         });
@@ -558,6 +567,7 @@
             });
 
             localStorage.setItem('uefld_historial_v3', JSON.stringify(historialGlobal));
+            window.AlertasFirebase.savePatch({ historialGlobal }).catch(() => {});
             document.getElementById('hist-modal').classList.add('hidden');
             renderHistorial();
         });

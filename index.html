@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acceso - Unidad Educativa Fiscomisional La Dolorosa</title>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-app.js"></script>
     <style>
         :root {
             --navy: #0b1e3b;
@@ -76,6 +81,12 @@
             -webkit-tap-highlight-color: transparent;
         }
         .btn-gold:hover { background: var(--gold-hover); }
+        .btn-admin {
+            width: 100%; margin-top: 12px; background: transparent; color: #e2e8f0;
+            border: 1px solid #64748b; padding: 11px 12px; border-radius: 6px;
+            font-weight: 700; cursor: pointer; font-size: 0.88rem;
+        }
+        .btn-admin:hover { border-color: var(--gold); color: white; }
         .btn-gold:active { transform: scale(0.99); }
         .error-msg { color: #fca5a5; font-size: 0.85rem; margin-top: 12px; display: none; }
 
@@ -134,17 +145,11 @@
                 </button>
             </div>
 
-            <div class="form-group">
-                <label>Usuario Institucional</label>
-                <input type="text" id="login-user" value="admin" autocomplete="username" required>
-            </div>
-            <div class="form-group">
-                <label>Contraseña</label>
-                <input type="password" id="login-pass" value="1234" autocomplete="current-password" required>
-            </div>
-            <button type="submit" class="btn-gold">INGRESAR A JORNADA MATUTINA</button>
-            <p class="error-msg" id="error-msg">Usuario o contraseña incorrectos</p>
+            <button type="submit" class="btn-gold">ENTRAR A LA APP · MATUTINA</button>
         </form>
+        <button type="button" id="admin-entry" class="btn-admin">Acceso de administración con Google</button>
+        <button type="button" id="export-local" class="btn-admin">Exportar respaldo guardado en este navegador</button>
+        <p class="error-msg" id="error-msg"></p>
     </div>
 
     <script>
@@ -154,33 +159,48 @@
             jornadaSeleccionada = jornada;
             document.getElementById('btn-matutina').classList.toggle('active', jornada === 'Matutina');
             document.getElementById('btn-vespertina').classList.toggle('active', jornada === 'Vespertina');
-            document.querySelector('.btn-gold').textContent = `INGRESAR A JORNADA ${jornada.toUpperCase()}`;
+            document.querySelector('.btn-gold').textContent = `ENTRAR A LA APP · ${jornada.toUpperCase()}`;
         }
 
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const usuario = document.getElementById('login-user').value.trim();
-            const clave = document.getElementById('login-pass').value.trim();
-
             localStorage.setItem('uefld_jornada', jornadaSeleccionada);
+            window.location.href = 'cursos.html';
+        });
 
+        document.getElementById('admin-entry').addEventListener('click', async () => {
+            const error = document.getElementById('error-msg');
             try {
-                const res = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ usuario, clave, jornada: jornadaSeleccionada })
-                });
-                if (res.ok) {
-                    window.location.href = 'dashboard.html';
-                    return;
-                }
-            } catch (_) {}
-
-            if (usuario === 'admin' && clave === '1234') {
+                await AlertasFirebase.signInAdmin();
+                localStorage.setItem('uefld_jornada', jornadaSeleccionada);
                 window.location.href = 'dashboard.html';
-            } else {
-                document.getElementById('error-msg').style.display = 'block';
+            } catch (err) {
+                error.textContent = err.message || 'No se pudo iniciar la sesión de administrador.';
+                error.style.display = 'block';
             }
+        });
+
+        document.getElementById('export-local').addEventListener('click', () => {
+            const keys = {
+                cursosPorSeccion: 'uefld_cursos_v3', students: 'uefld_students_v3',
+                attendanceByDateHour: 'uefld_asistencia_v3', obsByDateHourStudent: 'uefld_obs_por_hora_v3',
+                docentesPorHora: 'uefld_docentes_v3', historialGlobal: 'uefld_historial_v3'
+            };
+            const backup = {};
+            Object.entries(keys).forEach(([field, key]) => {
+                try { backup[field] = JSON.parse(localStorage.getItem(key)); } catch (_) { backup[field] = null; }
+            });
+            if (!backup.cursosPorSeccion && !backup.students && !backup.historialGlobal) {
+                alert('Este navegador no tiene datos locales para exportar.');
+                return;
+            }
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'respaldo-control-asistencia.json';
+            link.click();
+            URL.revokeObjectURL(url);
         });
     </script>
 </body>
