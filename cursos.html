@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cursos y Asistencia por Hora - U.E.F. La Dolorosa</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="importar_cursos.js"></script>
+    <style>
+        :root {
+            --navy: #0b1e3b; --navy-light: #16325c; --crimson: #a61c2b;
+            --red: #dc2626; --gold: #eab308; --gold-hover: #ca8a04;
+            --green: #16a34a; --amber: #d97706; --blue: #1d4ed8; --bg: #f1f5f9;
+            --text: #1e293b; --muted: #64748b; --border: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--bg); color: var(--text); }
+        .hidden { display: none !important; }
+        .app-layout { display: flex; min-height: 100vh; }
+
+        .sidebar { width: 255px; background: var(--navy); color: white; display: flex; flex-direction: column; flex-shrink: 0; }
+        .sidebar-brand-btn {
+            width: 100%; background: transparent; border: none;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding: 18px 16px; display: flex; align-items: center; gap: 12px;
+            color: white; text-align: left; cursor: pointer; transition: 0.2s;
+        }
+        .sidebar-brand-btn:hover { background: rgba(166, 28, 43, 0.42); border-bottom-color: rgba(220, 38, 38, 0.7); }
+        .brand-logo { width: 46px; height: 46px; border-radius: 8px; object-fit: cover; border: 1.5px solid var(--gold); flex-shrink: 0; }
+        .sidebar-brand-btn h3 { font-size: 0.88rem; line-height: 1.2; color: white; }
+        .sidebar-brand-btn small { display: block; color: #94a3b8; font-size: 0.74rem; margin-top: 2px; }
+
+        .menu-section-title { padding: 18px 20px 8px; font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 1px; }
+        .sidebar-nav { padding: 0 12px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .nav-link { display: flex; align-items: center; justify-content: space-between; text-decoration: none; color: #cbd5e1; padding: 11px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; transition: 0.2s; }
+        .nav-link:hover { background: rgba(255,255,255,0.06); color: white; }
+        .nav-link.active { background: var(--navy-light); color: white; border: 1px solid rgba(234, 179, 8, 0.5); }
+
+        .content-wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        .topbar { background: white; height: 62px; padding: 0 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .topbar h2 { font-size: 1.05rem; color: var(--navy); }
+        .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .jornada-pill {
+            background: #fef3c7; color: #92400e; border: 1px solid #f59e0b;
+            padding: 5px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+        }
+        .date-picker-box {
+            display: flex; align-items: center; gap: 6px; background: #f8fafc;
+            border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 8px;
+            font-size: 0.8rem; font-weight: 700; color: var(--navy);
+        }
+        .date-picker-box input {
+            border: none; background: transparent; font-weight: 700; color: var(--navy);
+            font-size: 0.82rem; cursor: pointer;
+        }
+        .main-body { padding: 22px 24px; }
+
+        .section-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+        .section-header-bar h3 { font-size: 0.96rem; color: var(--navy); }
+        .section-header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .courses-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(225px, 1fr)); gap: 14px; margin-bottom: 20px; }
+        .course-card {
+            background: white; border: 2px solid var(--border); border-radius: 12px;
+            padding: 15px 16px; cursor: pointer; transition: 0.2s;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .course-card:hover { transform: translateY(-2px); border-color: #94a3b8; }
+        .course-card.selected { border-color: var(--navy); background: #f8fafc; box-shadow: 0 6px 16px rgba(11, 30, 59, 0.12); }
+        .course-card-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 8px; }
+        .course-card-top h4 { font-size: 1.02rem; color: var(--navy); word-break: break-word; }
+        .course-card-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .course-badge-count { background: var(--navy); color: white; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
+        .btn-icon-delete {
+            background: #fee2e2; color: var(--red); border: 1px solid #fecaca;
+            border-radius: 6px; padding: 4px 8px; font-size: 0.76rem; font-weight: 700;
+            cursor: pointer; transition: 0.15s; line-height: 1.2;
+        }
+        .btn-icon-delete:hover { background: var(--red); color: white; border-color: var(--red); }
+        .btn-icon-edit {
+            background: #eff6ff; color: var(--blue); border: 1px solid #bfdbfe;
+            border-radius: 6px; padding: 4px 8px; font-size: 0.76rem; font-weight: 700;
+            cursor: pointer; transition: 0.15s; line-height: 1.2;
+        }
+        .btn-icon-edit:hover { background: var(--blue); color: white; border-color: var(--blue); }
+        .course-mini-stats { display: flex; gap: 10px; font-size: 0.78rem; color: var(--muted); font-weight: 600; flex-wrap: wrap; }
+        .stat-ok { color: var(--green); }
+        .stat-warn { color: var(--red); }
+
+        .hours-bar {
+            background: white; border: 1px solid var(--border); border-radius: 12px;
+            padding: 15px 18px; margin-bottom: 20px;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .hours-top-row {
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+        }
+        .hours-label { font-size: 0.85rem; font-weight: 700; color: var(--navy); }
+        .hours-pills { display: flex; gap: 7px; flex-wrap: wrap; }
+        .hour-btn {
+            background: #f1f5f9; border: 1.5px solid #cbd5e1; color: var(--text);
+            padding: 7px 13px; border-radius: 8px; font-size: 0.8rem; font-weight: 700;
+            cursor: pointer; transition: 0.15s;
+        }
+        .hour-btn:hover { border-color: var(--navy); }
+        .hour-btn.active { background: var(--navy); color: var(--gold); border-color: var(--navy); }
+        .hour-btn.has-data::after { content: " •"; color: var(--green); font-weight: 900; }
+
+        .teacher-hour-strip {
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+            background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 9px 14px;
+            font-size: 0.82rem;
+        }
+        .teacher-input-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .teacher-input-wrap input {
+            border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 10px;
+            font-size: 0.82rem; font-weight: 600; color: var(--navy); min-width: 230px; background: white;
+        }
+
+        .section-card { background: white; border-radius: 12px; padding: 20px; border: 1px solid var(--border); overflow-x: auto; }
+        .top-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+        .filters { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .filters input, .filters select { padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; }
+        .filters input { flex: 1; min-width: 220px; }
+
+        .btn-gold { background: var(--gold); color: var(--navy); border: none; padding: 10px 16px; border-radius: 6px; font-weight: 700; cursor: pointer; }
+        .btn-gold:hover { background: var(--gold-hover); }
+        .btn-navy { background: var(--navy); color: white; border: none; padding: 9px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-navy:hover { background: var(--navy-light); }
+        .btn-outline { background: white; border: 1px solid #cbd5e1; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .btn-outline:hover { background: #f8fafc; }
+        .btn-gmail {
+            background: #ea4335; color: white; border: none; padding: 9px 15px; border-radius: 6px;
+            font-weight: 700; cursor: pointer; font-size: 0.83rem; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-gmail:hover { background: #c5221f; }
+        .btn-whatsapp {
+            background: #16a34a; color: white; border: none; padding: 9px 15px; border-radius: 6px;
+            font-weight: 700; cursor: pointer; font-size: 0.83rem; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-whatsapp:hover { background: #15803d; }
+
+        table { width: 100%; border-collapse: collapse; min-width: 940px; }
+        th { background: var(--navy); color: white; text-align: left; padding: 12px; font-size: 0.82rem; }
+        td { padding: 11px 12px; border-bottom: 1px solid var(--border); font-size: 0.86rem; vertical-align: middle; }
+        tr:hover td { background: #f8fafc; }
+
+        .student-name-link {
+            background: none; border: none; padding: 0; color: var(--navy);
+            font-weight: 800; font-size: 0.88rem; cursor: pointer; text-align: left;
+            text-decoration: underline; text-decoration-color: rgba(11, 30, 59, 0.3);
+            text-underline-offset: 3px; transition: 0.15s;
+        }
+        .student-name-link:hover { color: var(--crimson); text-decoration-color: var(--crimson); }
+
+        .status-btn-group { display: flex; gap: 5px; flex-wrap: wrap; }
+        .st-btn {
+            border: 1.5px solid #cbd5e1; background: white; color: #475569;
+            padding: 5px 9px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;
+            cursor: pointer; transition: 0.15s;
+        }
+        .st-btn:hover { background: #f1f5f9; }
+        .st-btn.active-Presente { background: #dcfce7; border-color: #16a34a; color: #166534; }
+        .st-btn.active-Atraso { background: #fef3c7; border-color: #d97706; color: #92400e; }
+        .st-btn.active-Ausente { background: #fee2e2; border-color: #dc2626; color: #991b1b; }
+        .st-btn.active-Fuga { background: #7f1d1d; border-color: #7f1d1d; color: white; }
+
+        .btn-novedad {
+            background: #eff6ff; border: 1px solid #93c5fd; color: #1d4ed8;
+            padding: 6px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 700;
+            cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+        }
+        .btn-novedad:hover { background: #dbeafe; }
+        .btn-novedad.has-notes { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+        .last-note-preview {
+            display: block; font-size: 0.74rem; color: var(--muted);
+            max-width: 195px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px;
+        }
+
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+        .modal-card { background: white; width: 100%; max-width: 560px; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.3); max-height: 92vh; display: flex; flex-direction: column; }
+        .modal-header { background: var(--navy); color: white; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .modal-header h3 { font-size: 0.95rem; }
+        .modal-body { padding: 18px 20px; overflow-y: auto; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 4px; color: var(--navy); }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 9px 11px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.88rem;
+        }
+        .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; flex-shrink: 0; background: white; }
+
+        .notes-history {
+            max-height: 190px; overflow-y: auto; display: flex; flex-direction: column;
+            gap: 8px; margin-bottom: 14px; padding-right: 4px;
+        }
+        .note-entry {
+            background: #f8fafc; border: 1px solid var(--border); border-left: 3px solid var(--crimson);
+            border-radius: 6px; padding: 9px 11px; font-size: 0.82rem;
+        }
+        .note-entry-meta { font-size: 0.72rem; color: var(--muted); font-weight: 700; margin-bottom: 3px; }
+
+        .alert-detail-box { background: #fff5f5; border: 1px solid #fecaca; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+        .alert-detail-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
+        .tag-critica { background: var(--red); color: white; font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; }
+        .tag-normal { background: var(--navy); color: var(--gold); font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; }
+        .alert-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; font-size: 0.84rem; }
+
+        .day-events-summary {
+            background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+            padding: 10px 12px; margin-bottom: 12px; font-size: 0.8rem; color: #78350f;
+        }
+        .day-events-summary strong { display: block; margin-bottom: 5px; color: var(--navy); font-size: 0.82rem; }
+        .day-events-summary ul { padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+
+        .notify-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+        .notify-box label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--navy); margin-bottom: 5px; }
+        .notify-box input[type="email"] {
+            width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px;
+            font-size: 0.84rem; color: var(--navy); font-weight: 600; margin-bottom: 10px; background: white;
+        }
+        .notify-box textarea {
+            width: 100%; padding: 9px 10px; border: 1px solid #cbd5e1; border-radius: 6px;
+            font-size: 0.82rem; line-height: 1.45; color: var(--text); resize: vertical;
+        }
+        .notify-status { font-size: 0.76rem; color: var(--green); font-weight: 700; margin-top: 6px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <button type="button" class="sidebar-brand-btn" onclick="cerrarSesion()">
+                <img src="uefld.webp" alt="Escudo U.E.F. La Dolorosa" class="brand-logo">
+                <div>
+                    <h3>U.E.F. LA DOLOROSA</h3>
+                    <small>Fiscomisional · Admin</small>
+                </div>
+            </button>
+
+            <div class="menu-section-title">MENÚ PRINCIPAL</div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-link"><span> DASHBOARD</span></a>
+                <a href="cursos.html" class="nav-link active"><span> CURSOS / BASE DATOS</span></a>
+                <a href="novedades.html" class="nav-link"><span> HISTORIAL POR CURSOS</span></a>
+            </nav>
+        </aside>
+
+        <div class="content-wrapper">
+            <header class="topbar">
+                <h2> CURSOS Y CONTROL POR HORA ACADÉMICA</h2>
+                <div class="topbar-right">
+                    <div class="date-picker-box">
+                        <span> Fecha:</span>
+                        <input type="date" id="fecha-control" onchange="onDateChange()">
+                    </div>
+                    <button id="badge-jornada" class="jornada-pill" onclick="alternarJornada()">☀️ Jornada Matutina</button>
+                    <span style="font-size:0.88rem;font-weight:600;color:var(--navy);">Rectorado / Admin</span>
+                </div>
+            </header>
+
+            <main class="main-body">
+                <div class="section-header-bar">
+                    <h3 id="titulo-cursos-seccion"> Cursos de la Sección Matutina</h3>
+                    <div class="section-header-actions">
+                        <button type="button" class="btn-navy" onclick="abrirModalCrearCurso()">+ Crear Curso</button>
+                        <button type="button" class="btn-outline" onclick="seleccionarCursoCard('')">Ver todos los cursos</button>
+                    </div>
+                </div>
+                <div class="courses-cards-grid" id="courses-cards-container"></div>
+
+                <div class="hours-bar">
+                    <div class="hours-top-row">
+                        <div class="hours-label"> Hora Académica (Asistencia y observaciones independientes por hora):</div>
+                        <div class="hours-pills" id="hours-pills"></div>
+                    </div>
+                    <div class="teacher-hour-strip">
+                        <div class="teacher-input-wrap">
+                            <strong> Docente de <span id="docente-hora-label">1ra Hora</span>:</strong>
+                            <input type="text" id="docente-nombre-input" placeholder="Nombre del docente de esta hora..." onchange="guardarDocenteHora()">
+                        </div>
+                        <span style="font-size:0.78rem;color:var(--muted);font-weight:600;">
+                            💡 Haz clic en el nombre del estudiante para enviar todo lo ocurrido en el día (todas las horas).
+                        </span>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="top-actions">
+                        <h3 id="titulo-tabla-activa">Nómina Estudiantil · 1ra Hora</h3>
+                        <button class="btn-gold" onclick="abrirModalNuevoEstudiante()">+ Registrar Estudiante</button>
+                    </div>
+                <div class="top-actions">
+                    <h3 id="titulo-tabla-activa">Nómina Estudiantil · 1ra Hora</h3>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button type="button" class="btn-navy" onclick="abrirSelectorImportacion()"> Importar Excel / CSV</button>
+                        <input type="file" id="import-excel-input" accept=".csv,.xlsx,.xls" class="hidden" onchange="importarEstudiantesArchivo(event)">
+                        </div>
+                    </div>
+
+                    <div class="filters">
+                        <input type="text" id="search-input" placeholder="Buscar por nombre o cédula..." oninput="renderAll()">
+                        <select id="course-filter" onchange="onDropdownCourseChange()">
+                            <option value="">Todos los cursos de la sección</option>
+                        </select>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cédula</th>
+                                <th>Estudiante (Clic para Notificar)</th>
+                                <th>Curso</th>
+                                <th>Asistencia (<span id="th-hora-label">1ra Hora</span>)</th>
+                                <th>Faltas Acum.</th>
+                                <th>Observación (<span id="th-nov-hora-label">1ra Hora</span>)</th>
+                                <th style="text-align:center;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="students-tbody"></tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL CREAR CURSO -->
+    <div id="course-modal" class="modal-backdrop hidden">
+        <div class="modal-card" style="max-width:440px;">
+            <div class="modal-header">
+                <h3>📚 Crear Nuevo Curso</h3>
+                <button type="button" style="background:none;border:none;color:white;cursor:pointer;font-size:1.1rem;" onclick="cerrarModalCrearCurso()">✕</button>
+            </div>
+            <form id="course-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Sección / Jornada</label>
+                        <select id="curso-jornada">
+                            <option value="Matutina">Matutina</option>
+                            <option value="Vespertina">Vespertina</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre del Curso y Paralelo</label>
+                        <input type="text" id="curso-nombre" placeholder="Ej: 3ro BGU B / 9no B / 1ro Técnico A" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-outline" onclick="cerrarModalCrearCurso()">Cancelar</button>
+                    <button type="submit" class="btn-navy">Guardar Curso</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL NUEVO / EDITAR ESTUDIANTE -->
+    <div id="student-modal" class="modal-backdrop hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="student-modal-title">Registrar Estudiante</h3>
+                <button type="button" style="background:none;border:none;color:white;cursor:pointer;font-size:1.1rem;" onclick="cerrarModalEstudiante()">✕</button>
+            </div>
+            <form id="student-form">
+                <div class="modal-body">
+                    <div class="form-group"><label>Cédula</label><input type="text" id="est-cedula" required maxlength="10"></div>
+                    <div class="form-group"><label>Apellidos y Nombres</label><input type="text" id="est-nombres" required></div>
+                    <div class="form-group"><label>Curso</label><select id="est-curso" required></select></div>
+                    <div class="form-group"><label>Representante</label><input type="text" id="est-rep" required></div>
+                    <div class="form-group"><label>Correo Electrónico del Representante</label><input type="email" id="est-correo" placeholder="ejemplo@gmail.com" required></div>
+                    <div class="form-group"><label>Teléfono / Celular</label><input type="text" id="est-tel" required></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-outline" onclick="cerrarModalEstudiante()">Cancelar</button>
+                    <button type="submit" class="btn-navy">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL OBSERVACIÓN EXCLUSIVA DE LA HORA ACTIVA -->
+    <div id="novedad-modal" class="modal-backdrop hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="nov-modal-title"> Observación de Hora Académica</h3>
+                <button type="button" style="background:none;border:none;color:white;cursor:pointer;font-size:1.1rem;" onclick="cerrarModalNovedad()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p id="nov-student-info" style="font-size:0.84rem;color:var(--muted);margin-bottom:10px;font-weight:600;"></p>
+                <div class="notes-history" id="nov-history-list"></div>
+                <form id="novedad-form">
+                    <div class="form-group">
+                        <label>Registrar observación solo para <span id="nov-hora-tag" style="color:var(--crimson);">1ra Hora</span> (<span id="nov-fecha-tag"></span>):</label>
+                        <textarea id="nov-texto" rows="3" placeholder="Ej: El estudiante no trajo el deber en esta hora / Salió al baño y tardó 15 min..." required></textarea>
+                    </div>
+                    <div class="modal-footer" style="padding:12px 0 0;border-top:none;">
+                        <button type="button" class="btn-outline" onclick="cerrarModalNovedad()">Cerrar</button>
+                        <button type="submit" class="btn-navy"> Guardar solo en esta hora</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DETALLE DE ALERTA Y NOTIFICACIÓN DE TODO EL DÍA -->
+    <div id="detalle-notificar-modal" class="modal-backdrop hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="det-modal-title"> REPORTE DEL DÍA • ESTUDIANTE</h3>
+                <button type="button" style="background:none;border:none;color:white;cursor:pointer;font-size:1.2rem;" onclick="document.getElementById('detalle-notificar-modal').classList.add('hidden')">✕</button>
+            </div>
+            <div class="modal-body" id="det-modal-body"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn-outline" onclick="document.getElementById('detalle-notificar-modal').classList.add('hidden')">Cerrar</button>
+                <button type="button" class="btn-gmail" id="det-btn-gmail" title="Redactar y enviar directamente desde Gmail">✉️ Enviar por Gmail</button>
+                <button type="button" class="btn-whatsapp" id="det-btn-wa"> WhatsApp</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function cerrarSesion() {
+            localStorage.removeItem('uefld_jornada');
+            window.location.href = 'index.html';
+        }
+
+        const HORAS_ACADEMICAS = ['1ra Hora', '2da Hora', '3ra Hora', '4ta Hora', '5ta Hora', '6ta Hora', '7ma Hora'];
+        const DOCENTES_DEFAULT = {
+            '1ra Hora': 'Lic. Carlos Andrade (Matemática)',
+            '2da Hora': 'Mgs. Patricia León (Lengua y Literatura)',
+            '3ra Hora': 'Ing. Roberto Cevallos (Física)',
+            '4ta Hora': 'Lic. Sofía Villacís (Historia)',
+            '5ta Hora': 'Lic. Diego Paredes (Inglés)',
+            '6ta Hora': 'Dra. Mónica Ruiz (Química)',
+            '7ma Hora': 'Lic. Fernando Mora (Educación Física)'
+        };
+
+        const DEFAULT_CURSOS = {
+            Matutina: ["10mo A", "10mo B", "1ro BGU A", "2do BGU A", "3ro BGU A"],
+            Vespertina: ["8vo A", "9no A", "10mo C", "1ro BGU B", "2do BGU B"]
+        };
+
+        const DEFAULT_STUDENTS = [
+            { id: 1, cedula: "0105487921", nombres: "MATEO VERA", curso: "10mo B", jornada: "Matutina", representante: "Jorge Vera", correo: "jorge.vera.rep@gmail.com", telefono: "0996547890", faltas_acumuladas: 4 },
+            { id: 2, cedula: "0107123456", nombres: "ANDRÉS TORRES", curso: "1ro BGU A", jornada: "Matutina", representante: "Elena Torres", correo: "elena.torres.rep@gmail.com", telefono: "0998877665", faltas_acumuladas: 3 },
+            { id: 3, cedula: "0106987412", nombres: "SOFÍA MENDOZA", curso: "10mo A", jornada: "Matutina", representante: "María Mendoza", correo: "maria.mendoza.rep@gmail.com", telefono: "0987654321", faltas_acumuladas: 2 },
+            { id: 4, cedula: "0105998877", nombres: "CAMILA ORTIZ", curso: "2do BGU A", jornada: "Matutina", representante: "Luis Ortiz", correo: "luis.ortiz.rep@gmail.com", telefono: "0981122334", faltas_acumuladas: 0 },
+            { id: 5, cedula: "0106112233", nombres: "SEBASTIÁN LÓPEZ", curso: "3ro BGU A", jornada: "Matutina", representante: "Marco López", correo: "marco.lopez.rep@gmail.com", telefono: "0993322110", faltas_acumuladas: 1 },
+            { id: 6, cedula: "0108112233", nombres: "CARLOS JIMÉNEZ", curso: "10mo C", jornada: "Vespertina", representante: "Rosa Jiménez", correo: "rosa.jimenez.rep@gmail.com", telefono: "0991112233", faltas_acumuladas: 4 },
+            { id: 7, cedula: "0108445566", nombres: "VALERIA SALAZAR", curso: "1ro BGU B", jornada: "Vespertina", representante: "Pedro Salazar", correo: "pedro.salazar.rep@gmail.com", telefono: "0984445566", faltas_acumuladas: 3 },
+            { id: 8, cedula: "0108990011", nombres: "DANIELA PAREDES", curso: "8vo A", jornada: "Vespertina", representante: "Lucía Paredes", correo: "lucia.paredes.rep@gmail.com", telefono: "0976543210", faltas_acumuladas: 0 },
+            { id: 9, cedula: "0108776655", nombres: "MATEO GÓMEZ", curso: "9no A", jornada: "Vespertina", representante: "Raúl Gómez", correo: "raul.gomez.rep@gmail.com", telefono: "0989998877", faltas_acumuladas: 1 }
+        ];
+
+        function getTodayISO() {
+            const d = new Date();
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function formatearFechaLegible(isoStr) {
+            const meses = [
+                "enero", "febrero", "marzo", "abril", "mayo", "junio",
+                "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+            ];
+            const valida = (isoStr && /^\d{4}-\d{2}-\d{2}$/.test(isoStr)) ? isoStr : getTodayISO();
+            const [yyyy, mm, dd] = valida.split('-').map(Number);
+            if (!dd || dd < 1 || !mm || mm < 1 || mm > 12) {
+                const hoy = new Date();
+                return `${hoy.getDate()} de ${meses[hoy.getMonth()]} de ${hoy.getFullYear()}`;
+            }
+            return `${dd} de ${meses[mm - 1]} de ${yyyy}`;
+        }
+
+        function formatearTelefonoEcuador(tel) {
+            let digits = String(tel || '').replace(/\D/g, '');
+            if (digits.startsWith('0') && digits.length === 10) {
+                digits = '593' + digits.substring(1);
+            } else if (!digits.startsWith('593') && digits.length === 9) {
+                digits = '593' + digits;
+            }
+            return digits;
+        }
+
+        function cargarCursosIniciales() {
+            try {
+                const guardado = JSON.parse(localStorage.getItem('uefld_cursos_v3'));
+                if (guardado && typeof guardado === 'object') {
+                    return {
+                        Matutina: Array.isArray(guardado.Matutina) ? [...guardado.Matutina] : [...DEFAULT_CURSOS.Matutina],
+                        Vespertina: Array.isArray(guardado.Vespertina) ? [...guardado.Vespertina] : [...DEFAULT_CURSOS.Vespertina]
+                    };
+                }
+            } catch (_) {}
+            return {
+                Matutina: [...DEFAULT_CURSOS.Matutina],
+                Vespertina: [...DEFAULT_CURSOS.Vespertina]
+            };
+        }
+
+        let cursosPorSeccion = cargarCursosIniciales();
+        let students = JSON.parse(localStorage.getItem('uefld_students_v3')) || [...DEFAULT_STUDENTS];
+        let attendanceByDateHour = JSON.parse(localStorage.getItem('uefld_asistencia_v3')) || {};
+        let obsByDateHourStudent = JSON.parse(localStorage.getItem('uefld_obs_por_hora_v3')) || {};
+        let docentesPorHora = JSON.parse(localStorage.getItem('uefld_docentes_v3')) || {};
+        let historialGlobal = JSON.parse(localStorage.getItem('uefld_historial_v3')) || [];
+
+        let jornadaActual = localStorage.getItem('uefld_jornada') || 'Matutina';
+        let fechaActual = getTodayISO();
+        let horaActual = '1ra Hora';
+        let cursoSeleccionado = '';
+        let alumnoNovedadId = null;
+        let editandoEstudianteId = null;
+
+        function guardarTodoStorage() {
+            localStorage.setItem('uefld_cursos_v3', JSON.stringify(cursosPorSeccion));
+            localStorage.setItem('uefld_students_v3', JSON.stringify(students));
+            localStorage.setItem('uefld_asistencia_v3', JSON.stringify(attendanceByDateHour));
+            localStorage.setItem('uefld_obs_por_hora_v3', JSON.stringify(obsByDateHourStudent));
+            localStorage.setItem('uefld_docentes_v3', JSON.stringify(docentesPorHora));
+            localStorage.setItem('uefld_historial_v3', JSON.stringify(historialGlobal));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('fecha-control').value = fechaActual;
+            actualizarUIJornada();
+            cargarDocenteDeHora();
+            renderAll();
+        });
+
+        function onDateChange() {
+            const input = document.getElementById('fecha-control');
+            if (!input.value || !/^\d{4}-\d{2}-\d{2}$/.test(input.value)) {
+                input.value = getTodayISO();
+            }
+            fechaActual = input.value;
+            cargarDocenteDeHora();
+            renderAll();
+        }
+
+        function actualizarUIJornada() {
+            const badge = document.getElementById('badge-jornada');
+            badge.textContent = jornadaActual === 'Vespertina' ? ' Jornada Vespertina' : ' Jornada Matutina';
+
+            document.getElementById('titulo-cursos-seccion').textContent =
+                ` Cursos de la Sección ${jornadaActual}`;
+
+            const cursos = cursosPorSeccion[jornadaActual] || [];
+            const filterSelect = document.getElementById('course-filter');
+            filterSelect.innerHTML = `<option value="">Todos los cursos (${jornadaActual})</option>` +
+                cursos.map((c, idx) => `<option value="${idx}">${c}</option>`).join('');
+            const idxSel = cursos.indexOf(cursoSeleccionado);
+            filterSelect.value = idxSel >= 0 ? String(idxSel) : '';
+        }
+
+        function alternarJornada() {
+            jornadaActual = jornadaActual === 'Matutina' ? 'Vespertina' : 'Matutina';
+            localStorage.setItem('uefld_jornada', jornadaActual);
+            cursoSeleccionado = '';
+            actualizarUIJornada();
+            renderAll();
+        }
+
+        // ================= GESTIÓN DE CURSOS (CREAR / ELIMINAR SIN HUÉRFANOS) =================
+        function abrirModalCrearCurso() {
+            document.getElementById('curso-jornada').value = jornadaActual;
+            document.getElementById('curso-nombre').value = '';
+            document.getElementById('course-modal').classList.remove('hidden');
+            setTimeout(() => {
+                const input = document.getElementById('curso-nombre');
+                input.focus();
+            }, 40);
+        }
+
+        function cerrarModalCrearCurso() {
+            document.getElementById('course-modal').classList.add('hidden');
+        }
+
+        document.getElementById('course-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const jornada = document.getElementById('curso-jornada').value;
+            const nombre = document.getElementById('curso-nombre').value.trim();
+            if (!nombre) return;
+
+            if (!Array.isArray(cursosPorSeccion[jornada])) {
+                cursosPorSeccion[jornada] = [];
+            }
+
+            const existe = cursosPorSeccion[jornada].some(c => c.toLowerCase() === nombre.toLowerCase());
+            if (existe) {
+                alert(`El curso "${nombre}" ya existe en la sección ${jornada}.`);
+                return;
+            }
+
+            cursosPorSeccion[jornada].push(nombre);
+
+            if (jornada !== jornadaActual) {
+                jornadaActual = jornada;
+                localStorage.setItem('uefld_jornada', jornadaActual);
+            }
+            cursoSeleccionado = nombre;
+
+            guardarTodoStorage();
+            cerrarModalCrearCurso();
+            e.target.reset();
+            actualizarUIJornada();
+            renderAll();
+        });
+
+        function limpiarDatosEstudiantes(idsSet) {
+            if (!idsSet || idsSet.size === 0) return;
+
+            Object.keys(attendanceByDateHour).forEach(fecha => {
+                const horasObj = attendanceByDateHour[fecha] || {};
+                Object.keys(horasObj).forEach(hora => {
+                    idsSet.forEach(id => {
+                        delete horasObj[hora][id];
+                    });
+                    if (Object.keys(horasObj[hora]).length === 0) {
+                        delete horasObj[hora];
+                    }
+                });
+                if (Object.keys(horasObj).length === 0) {
+                    delete attendanceByDateHour[fecha];
+                }
+            });
+
+            Object.keys(obsByDateHourStudent).forEach(fecha => {
+                const horasObj = obsByDateHourStudent[fecha] || {};
+                Object.keys(horasObj).forEach(hora => {
+                    idsSet.forEach(id => {
+                        delete horasObj[hora][id];
+                    });
+                    if (Object.keys(horasObj[hora]).length === 0) {
+                        delete horasObj[hora];
+                    }
+                });
+                if (Object.keys(horasObj).length === 0) {
+                    delete obsByDateHourStudent[fecha];
+                }
+            });
+
+            historialGlobal = historialGlobal.filter(h => !idsSet.has(h.estudianteId));
+        }
+
+        function eliminarCursoPorIndice(event, idx) {
+            event.stopPropagation();
+            const cursos = cursosPorSeccion[jornadaActual] || [];
+            const curso = cursos[idx];
+            if (!curso) return;
+
+            const alumnosAsociados = students.filter(s => (s.jornada || 'Matutina') === jornadaActual && s.curso === curso);
+            const msg = alumnosAsociados.length > 0
+                ? `¿Eliminar el curso "${curso}" (${jornadaActual})?\n\n Se eliminarán también los ${alumnosAsociados.length} estudiante(s) y todos sus registros de asistencia, observaciones e historial asociados.`
+                : `¿Eliminar el curso "${curso}" (${jornadaActual})?`;
+
+            if (!confirm(msg)) return;
+
+            cursosPorSeccion[jornadaActual] = cursos.filter((_, i) => i !== idx);
+
+            const idsAEliminar = new Set(alumnosAsociados.map(s => s.id));
+            students = students.filter(s => !idsAEliminar.has(s.id));
+            limpiarDatosEstudiantes(idsAEliminar);
+
+            historialGlobal = historialGlobal.filter(
+                h => !((h.jornada || 'Matutina') === jornadaActual && h.curso === curso)
+            );
+
+            if (cursoSeleccionado === curso) {
+                cursoSeleccionado = '';
+            }
+
+            guardarTodoStorage();
+            actualizarUIJornada();
+            renderAll();
+        }
+
+        // ================= GESTIÓN DE ESTUDIANTES (CREAR / EDITAR / ELIMINAR) =================
+        function llenarSelectCursosEstudiante(cursoActual) {
+            const cursos = cursosPorSeccion[jornadaActual] || [];
+            document.getElementById('est-curso').innerHTML = cursos
+                .map(c => `<option value="${c}" ${c === cursoActual ? 'selected' : ''}>${c}</option>`)
+                .join('');
+        }
+
+        function abrirModalNuevoEstudiante() {
+            if ((cursosPorSeccion[jornadaActual] || []).length === 0) {
+                alert(`Primero debes crear al menos un curso en la sección ${jornadaActual}.`);
+                abrirModalCrearCurso();
+                return;
+            }
+            editandoEstudianteId = null;
+            document.getElementById('student-modal-title').textContent = 'Registrar Estudiante';
+            document.getElementById('student-form').reset();
+            llenarSelectCursosEstudiante(cursoSeleccionado || '');
+            document.getElementById('student-modal').classList.remove('hidden');
+        }
+
+        function abrirModalEditarEstudiante(id) {
+            const est = students.find(s => s.id === id);
+            if (!est) return;
+            editandoEstudianteId = est.id;
+            document.getElementById('student-modal-title').textContent = '✏️ Editar Información del Estudiante';
+            document.getElementById('est-cedula').value = est.cedula || '';
+            document.getElementById('est-nombres').value = est.nombres || '';
+            llenarSelectCursosEstudiante(est.curso || '');
+            document.getElementById('est-rep').value = est.representante || '';
+            document.getElementById('est-correo').value = est.correo || '';
+            document.getElementById('est-tel').value = est.telefono || '';
+            document.getElementById('student-modal').classList.remove('hidden');
+        }
+
+        function cerrarModalEstudiante() {
+            editandoEstudianteId = null;
+            document.getElementById('student-modal').classList.add('hidden');
+        }
+
+        document.getElementById('student-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const datos = {
+                cedula: document.getElementById('est-cedula').value.trim(),
+                nombres: document.getElementById('est-nombres').value.trim().toUpperCase(),
+                curso: document.getElementById('est-curso').value,
+                representante: document.getElementById('est-rep').value.trim(),
+                correo: document.getElementById('est-correo').value.trim(),
+                telefono: document.getElementById('est-tel').value.trim()
+            };
+
+            if (!datos.curso) {
+                alert('Selecciona un curso válido.');
+                return;
+            }
+
+            if (editandoEstudianteId !== null) {
+                const idx = students.findIndex(s => s.id === editandoEstudianteId);
+                if (idx !== -1) students[idx] = { ...students[idx], ...datos };
+            } else {
+                students.push({ id: Date.now(), jornada: jornadaActual, faltas_acumuladas: 0, ...datos });
+            }
+
+            guardarTodoStorage();
+            cerrarModalEstudiante();
+            e.target.reset();
+            renderAll();
+        });
+
+        function eliminarEstudiante(id) {
+            const est = students.find(s => s.id === id);
+            if (!est) return;
+
+            if (!confirm(`¿Seguro que deseas eliminar al estudiante ${est.nombres} (${est.curso}) y todos sus registros asociados?`)) return;
+
+            students = students.filter(s => s.id !== id);
+            limpiarDatosEstudiantes(new Set([id]));
+            guardarTodoStorage();
+            renderAll();
+        }
+
+        function seleccionarCursoCardPorIndice(idx) {
+            const cursos = cursosPorSeccion[jornadaActual] || [];
+            const curso = idx === '' ? '' : (cursos[idx] || '');
+            cursoSeleccionado = (cursoSeleccionado === curso) ? '' : curso;
+            const nuevoIdx = cursos.indexOf(cursoSeleccionado);
+            document.getElementById('course-filter').value = nuevoIdx >= 0 ? String(nuevoIdx) : '';
+            renderAll();
+        }
+
+        function seleccionarCursoCard(curso) {
+            if (!curso) {
+                cursoSeleccionado = '';
+                document.getElementById('course-filter').value = '';
+                renderAll();
+                return;
+            }
+            const cursos = cursosPorSeccion[jornadaActual] || [];
+            const idx = cursos.indexOf(curso);
+            seleccionarCursoCardPorIndice(idx >= 0 ? idx : '');
+        }
+
+        function onDropdownCourseChange() {
+            const cursos = cursosPorSeccion[jornadaActual] || [];
+            const rawVal = document.getElementById('course-filter').value;
+            if (rawVal === '') {
+                cursoSeleccionado = '';
+            } else {
+                cursoSeleccionado = cursos[Number(rawVal)] || '';
+            }
+            renderAll();
+        }
+
+        function seleccionarHora(hora) {
+            horaActual = hora;
+            document.getElementById('th-hora-label').textContent = hora;
+            document.getElementById('th-nov-hora-label').textContent = hora;
+            document.getElementById('docente-hora-label').textContent = hora;
+            cargarDocenteDeHora();
+            renderAll();
+        }
+
+        function cargarDocenteDeHora() {
+            const key = `${fechaActual}_${jornadaActual}_${horaActual}`;
+            const val = docentesPorHora[key] || DOCENTES_DEFAULT[horaActual] || '';
+            document.getElementById('docente-nombre-input').value = val;
+            document.getElementById('docente-hora-label').textContent = horaActual;
+        }
+
+        function guardarDocenteHora() {
+            const key = `${fechaActual}_${jornadaActual}_${horaActual}`;
+            docentesPorHora[key] = document.getElementById('docente-nombre-input').value.trim();
+            guardarTodoStorage();
+        }
+
+        function getEstadoEnFechaYHora(estId, fecha, hora) {
+            if (attendanceByDateHour[fecha] && attendanceByDateHour[fecha][hora] && attendanceByDateHour[fecha][hora][estId]) {
+                return attendanceByDateHour[fecha][hora][estId];
+            }
+            return 'Presente';
+        }
+
+        function getObservacionesDeHora(estId, fecha, hora) {
+            if (obsByDateHourStudent[fecha] && obsByDateHourStudent[fecha][hora] && Array.isArray(obsByDateHourStudent[fecha][hora][estId])) {
+                return obsByDateHourStudent[fecha][hora][estId];
+            }
+            return [];
+        }
+
+        // ================= RECOPILAR TODO LO QUE PASÓ EN EL DÍA (SIN IMPORTAR LA HORA) =================
+        function obtenerEventosDelDia(est, fecha) {
+            const eventos = [];
+            const dayAsist = attendanceByDateHour[fecha] || {};
+            const dayObs = obsByDateHourStudent[fecha] || {};
+
+            HORAS_ACADEMICAS.forEach(hora => {
+                const estado = (dayAsist[hora] && dayAsist[hora][est.id]) ? dayAsist[hora][est.id] : 'Presente';
+                const docenteKey = `${fecha}_${est.jornada || jornadaActual}_${hora}`;
+                const docente = docentesPorHora[docenteKey] || DOCENTES_DEFAULT[hora] || 'Docente de turno';
+
+                if (estado !== 'Presente') {
+                    eventos.push({
+                        hora: hora,
+                        texto: `${hora} (${docente}): Marcado como ${estado}.`
+                    });
+                }
+
+                const notasHora = (dayObs[hora] && Array.isArray(dayObs[hora][est.id])) ? dayObs[hora][est.id] : [];
+                notasHora.forEach(n => {
+                    eventos.push({
+                        hora: hora,
+                        texto: `${hora} (${n.docente || docente}, ${n.horaRegistro || ''}): Observación - ${n.texto}`
+                    });
+                });
+            });
+
+            // Incluir también registros del historial de ese día que no sean notificaciones ya enviadas
+            const histDia = historialGlobal.filter(
+                h => h.estudianteId === est.id &&
+                     h.fecha === fecha &&
+                     !String(h.detalle || '').startsWith('Notificación real enviada')
+            );
+
+            histDia.forEach(h => {
+                const yaCubierto = eventos.some(ev =>
+                    ev.hora === h.horaClase &&
+                    (ev.texto.includes(h.detalle) || (h.tipo !== 'Observación Manual' && ev.texto.includes(h.tipo)))
+                );
+                if (!yaCubierto) {
+                    eventos.push({
+                        hora: h.horaClase || 'Jornada',
+                        texto: `${h.horaClase || 'Jornada'} (${h.docente || 'Inspección'}): [${h.tipo}] ${h.detalle}`
+                    });
+                }
+            });
+
+            return eventos;
+        }
+
+        function renderHoursPills() {
+            const dayAsist = attendanceByDateHour[fechaActual] || {};
+            const dayObs = obsByDateHourStudent[fechaActual] || {};
+            document.getElementById('hours-pills').innerHTML = HORAS_ACADEMICAS.map(h => {
+                const tieneAsist = dayAsist[h] && Object.keys(dayAsist[h]).length > 0;
+                const tieneObs = dayObs[h] && Object.keys(dayObs[h]).length > 0;
+                const tieneRegistros = tieneAsist || tieneObs;
+                return `
+                    <button type="button"
+                        class="hour-btn ${horaActual === h ? 'active' : ''} ${tieneRegistros ? 'has-data' : ''}"
+                        onclick="seleccionarHora('${h}')">
+                        ${h}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function renderAll() {
+            renderHoursPills();
+            const estSeccion = students.filter(s => (s.jornada || 'Matutina') === jornadaActual);
+            const cursos = cursosPorSeccion[jornadaActual] || [];
+
+            if (cursoSeleccionado && !cursos.includes(cursoSeleccionado)) {
+                cursoSeleccionado = '';
+            }
+
+            const cardsContainer = document.getElementById('courses-cards-container');
+            if (cursos.length === 0) {
+                cardsContainer.innerHTML = `<p style="color:var(--muted);font-size:0.86rem;grid-column:1/-1;">No hay cursos registrados en la sección ${jornadaActual}. Usa <strong>+ Crear Curso</strong> para agregar uno.</p>`;
+            } else {
+                cardsContainer.innerHTML = cursos.map((curso, idx) => {
+                    const alumnosCurso = estSeccion.filter(s => s.curso === curso);
+                    const presentes = alumnosCurso.filter(s => getEstadoEnFechaYHora(s.id, fechaActual, horaActual) === 'Presente').length;
+                    const novedadesHora = alumnosCurso.filter(s =>
+                        getEstadoEnFechaYHora(s.id, fechaActual, horaActual) !== 'Presente' ||
+                        getObservacionesDeHora(s.id, fechaActual, horaActual).length > 0
+                    ).length;
+                    const isSelected = cursoSeleccionado === curso;
+
+                    return `
+                        <div class="course-card ${isSelected ? 'selected' : ''}" onclick="seleccionarCursoCardPorIndice(${idx})">
+                            <div class="course-card-top">
+                                <h4>${curso}</h4>
+                                <div class="course-card-actions">
+                                    <span class="course-badge-count">${alumnosCurso.length} est.</span>
+                                    <button type="button" class="btn-icon-delete" title="Eliminar curso" onclick="eliminarCursoPorIndice(event, ${idx})">🗑️</button>
+                                </div>
+                            </div>
+                            <div class="course-mini-stats">
+                                <span class="stat-ok">✓ ${presentes} presentes</span>
+                                <span class="stat-warn">⚠ ${novedadesHora} nov. (${horaActual})</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            const q = document.getElementById('search-input').value.toLowerCase();
+            const filtrados = estSeccion.filter(e =>
+                (e.nombres.toLowerCase().includes(q) || e.cedula.includes(q)) &&
+                (!cursoSeleccionado || e.curso === cursoSeleccionado)
+            );
+
+            document.getElementById('titulo-tabla-activa').textContent =
+                `Nómina ${cursoSeleccionado ? '· ' + cursoSeleccionado : '· Todos los cursos'} · ${formatearFechaLegible(fechaActual)} · ${horaActual}`;
+
+            const estados = [
+                { key: 'Presente', label: ' Presente' },
+                { key: 'Atraso', label: ' Atraso' },
+                { key: 'Ausente', label: ' Ausente' },
+                { key: 'Fuga', label: ' Fuga' }
+            ];
+
+            const tbody = document.getElementById('students-tbody');
+            if (filtrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No hay estudiantes registrados para mostrar en esta vista.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtrados.map(est => {
+                const estadoActual = getEstadoEnFechaYHora(est.id, fechaActual, horaActual);
+                const obsEstaHora = getObservacionesDeHora(est.id, fechaActual, horaActual);
+                const ultimaObsHora = obsEstaHora.length ? obsEstaHora[0].texto : '';
+                const correoEst = est.correo || `${est.representante.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '.')}@gmail.com`;
+
+                return `
+                    <tr>
+                        <td>${est.cedula}</td>
+                        <td>
+                            <button type="button" class="student-name-link" onclick="abrirDetalleNotificacion(${est.id})" title="Clic para enviar todo lo ocurrido en el día">
+                                ${est.nombres}
+                            </button><br>
+                            <small style="color:var(--muted);">Rep: ${est.representante} · ${correoEst}</small>
+                        </td>
+                        <td><span style="background:#e2e8f0;padding:3px 8px;border-radius:5px;font-weight:700;font-size:0.78rem;">${est.curso}</span></td>
+                        <td>
+                            <div class="status-btn-group">
+                                ${estados.map(st => `
+                                    <button type="button"
+                                        class="st-btn ${estadoActual === st.key ? 'active-' + st.key : ''}"
+                                        onclick="marcarAsistencia(${est.id}, '${st.key}')">
+                                        ${st.label}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </td>
+                        <td><strong style="color:${est.faltas_acumuladas >= 3 ? 'var(--red)' : 'var(--navy)'};">${est.faltas_acumuladas}</strong></td>
+                        <td>
+                            <button type="button" class="btn-novedad ${obsEstaHora.length ? 'has-notes' : ''}" onclick="abrirModalNovedad(${est.id})">
+                                 Novedad (${obsEstaHora.length})
+                            </button>
+                            ${ultimaObsHora ? `<span class="last-note-preview" title="${ultimaObsHora}">${ultimaObsHora}</span>` : ''}
+                        </td>
+                        <td style="text-align:center;">
+                            <button type="button" class="btn-icon-edit" title="Editar estudiante" onclick="abrirModalEditarEstudiante(${est.id})">✏️</button>
+                            <button type="button" class="btn-icon-delete" title="Eliminar estudiante" onclick="eliminarEstudiante(${est.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function marcarAsistencia(id, nuevoEstado) {
+            const est = students.find(s => s.id === id);
+            if (!est) return;
+
+            const estadoPrevio = getEstadoEnFechaYHora(id, fechaActual, horaActual);
+            if (estadoPrevio === nuevoEstado) return;
+
+            if ((nuevoEstado === 'Ausente' || nuevoEstado === 'Fuga') && estadoPrevio !== 'Ausente' && estadoPrevio !== 'Fuga') {
+                est.faltas_acumuladas += 1;
+            } else if ((estadoPrevio === 'Ausente' || estadoPrevio === 'Fuga') && (nuevoEstado === 'Presente' || nuevoEstado === 'Atraso')) {
+                est.faltas_acumuladas = Math.max(0, est.faltas_acumuladas - 1);
+            }
+
+            if (!attendanceByDateHour[fechaActual]) attendanceByDateHour[fechaActual] = {};
+            if (!attendanceByDateHour[fechaActual][horaActual]) attendanceByDateHour[fechaActual][horaActual] = {};
+            attendanceByDateHour[fechaActual][horaActual][id] = nuevoEstado;
+
+            if (nuevoEstado !== 'Presente') {
+                const docente = document.getElementById('docente-nombre-input').value.trim() || 'Docente de turno';
+                const horaReloj = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+                historialGlobal.unshift({
+                    id: Date.now(),
+                    estudianteId: est.id,
+                    estudiante: est.nombres,
+                    curso: est.curso,
+                    jornada: est.jornada || jornadaActual,
+                    fecha: fechaActual,
+                    horaClase: horaActual,
+                    horaRegistro: horaReloj,
+                    docente: docente,
+                    tipo: nuevoEstado,
+                    detalle: `Marcado como ${nuevoEstado} en ${horaActual} (${docente}).`
+                });
+            }
+
+            guardarTodoStorage();
+            renderAll();
+        }
+
+        function abrirDetalleNotificacion(id) {
+            const est = students.find(s => s.id === id);
+            if (!est) return;
+
+            const correoDefecto = est.correo || `${est.representante.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '.')}@gmail.com`;
+            const eventosDia = obtenerEventosDelDia(est, fechaActual);
+            const fechaLegible = formatearFechaLegible(fechaActual);
+
+            const bloqueEventosTexto = eventosDia.length > 0
+                ? eventosDia.map(ev => `• ${ev.texto}`).join('\n')
+                : `• Asistencia normal registrada durante la jornada del ${fechaLegible} (sin faltas, atrasos, fugas ni observaciones reportadas).`;
+
+            const mensajePredeterminado =
+                `Estimado/a ${est.representante}, le saludamos de Inspección General de la U.E.F. "La Dolorosa".\n\n` +
+                `Le enviamos el reporte completo de todo lo ocurrido el día ${fechaLegible} (${fechaActual}) respecto a su representado/a ${est.nombres} (${est.curso} - Jornada ${est.jornada}):\n` +
+                `${bloqueEventosTexto}\n\n` +
+                `• Faltas acumuladas a la fecha: ${est.faltas_acumuladas}\n\n` +
+                `Atentamente,\nInspección General - U.E.F. "La Dolorosa"`;
+
+            const esCritica = est.faltas_acumuladas >= 2 || eventosDia.some(e => e.texto.includes('Ausente') || e.texto.includes('Fuga'));
+
+            const resumenVisualHtml = eventosDia.length > 0
+                ? `<div class="day-events-summary">
+                     <strong> Todo lo registrado el ${fechaLegible} (todas las horas):</strong>
+                     <ul>${eventosDia.map(ev => `<li>${ev.texto}</li>`).join('')}</ul>
+                   </div>`
+                : `<div class="day-events-summary">
+                     <strong> Resumen del ${fechaLegible}:</strong>
+                     <span>No se registraron faltas, atrasos, fugas ni observaciones en ninguna hora de esta fecha.</span>
+                   </div>`;
+
+            document.getElementById('det-modal-title').textContent = `🔔 REPORTE DEL DÍA • ${est.nombres.toUpperCase()}`;
+            document.getElementById('det-modal-body').innerHTML = `
+                <div class="alert-detail-box">
+                    <div class="alert-detail-top">
+                        <h4>${est.nombres.toUpperCase()} (${est.curso})</h4>
+                        <span class="${esCritica ? 'tag-critica' : 'tag-normal'}">${esCritica ? 'ALERTA CRÍTICA' : 'REPORTE DIARIO'}</span>
+                    </div>
+                    <div class="alert-detail-grid">
+                        <div><strong>Fecha:</strong> ${fechaLegible}</div>
+                        <div><strong>Faltas Acum.:</strong> ${est.faltas_acumuladas}</div>
+                        <div><strong>Representante:</strong> ${est.representante}</div>
+                        <div><strong>Celular:</strong> ${est.telefono}</div>
+                    </div>
+                </div>
+
+                ${resumenVisualHtml}
+
+                <div class="notify-box">
+                    <label for="curso-correo-rep">📧 Correo electrónico del representante:</label>
+                    <input type="email" id="curso-correo-rep" value="${correoDefecto}" placeholder="correo@ejemplo.com">
+
+                    <label for="curso-mensaje-rep">✍️ Mensaje completo del día para el representante (editable):</label>
+                    <textarea id="curso-mensaje-rep" rows="7">${mensajePredeterminado}</textarea>
+                    <div class="notify-status" id="curso-notify-status">✓ Reporte diario enviado y registrado en el historial del curso.</div>
+                </div>
+            `;
+
+            const guardarEnvio = (canal, destino, texto) => {
+                const horaReloj = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+                historialGlobal.unshift({
+                    id: Date.now(),
+                    estudianteId: est.id,
+                    estudiante: est.nombres,
+                    curso: est.curso,
+                    jornada: est.jornada || jornadaActual,
+                    fecha: fechaActual,
+                    horaClase: 'Reporte del Día',
+                    horaRegistro: horaReloj,
+                    docente: 'Inspección General',
+                    tipo: 'Observación Manual',
+                    detalle: `Notificación real enviada vía ${canal} a ${est.representante} (${destino}) con reporte del día ${fechaActual}: "${texto.replace(/\n+/g, ' ')}"`
+                });
+                guardarTodoStorage();
+                renderAll();
+                document.getElementById('curso-notify-status').style.display = 'block';
+            };
+
+            document.getElementById('det-btn-gmail').onclick = () => {
+                const correoDestino = document.getElementById('curso-correo-rep').value.trim();
+                const texto = document.getElementById('curso-mensaje-rep').value.trim();
+                if (!correoDestino || !correoDestino.includes('@')) {
+                    alert("Por favor ingrese un correo electrónico válido del representante.");
+                    return;
+                }
+                est.correo = correoDestino;
+                guardarEnvio('Gmail / Correo Electrónico', correoDestino, texto);
+
+                const asunto = `Reporte Diario U.E.F. La Dolorosa (${fechaActual}) - ${est.nombres} (${est.curso})`;
+                const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(correoDestino)}&su=${encodeURIComponent(asunto)}&body=${encodeURIComponent(texto)}`;
+                window.open(gmailUrl, '_blank');
+            };
+
+            document.getElementById('det-btn-wa').onclick = () => {
+                const texto = document.getElementById('curso-mensaje-rep').value.trim();
+                const numeroIntl = formatearTelefonoEcuador(est.telefono);
+                guardarEnvio('WhatsApp', est.telefono, texto);
+                window.open(`https://wa.me/${numeroIntl}?text=${encodeURIComponent(texto)}`, '_blank');
+            };
+
+            document.getElementById('detalle-notificar-modal').classList.remove('hidden');
+        }
+
+        function abrirModalNovedad(id) {
+            const est = students.find(s => s.id === id);
+            if (!est) return;
+            alumnoNovedadId = id;
+
+            document.getElementById('nov-modal-title').textContent = `📝 Observación (${horaActual}) · ${est.nombres}`;
+            document.getElementById('nov-student-info').textContent =
+                `Curso: ${est.curso} (${est.jornada}) · Fecha: ${formatearFechaLegible(fechaActual)} · Hora: ${horaActual}`;
+            document.getElementById('nov-hora-tag').textContent = horaActual;
+            document.getElementById('nov-fecha-tag').textContent = formatearFechaLegible(fechaActual);
+            document.getElementById('nov-texto').value = '';
+
+            renderObservacionesDeEstaHora(est);
+            document.getElementById('novedad-modal').classList.remove('hidden');
+        }
+
+        function renderObservacionesDeEstaHora(est) {
+            const notasHora = getObservacionesDeHora(est.id, fechaActual, horaActual);
+            const container = document.getElementById('nov-history-list');
+            if (notasHora.length === 0) {
+                container.innerHTML = `<p style="font-size:0.82rem;color:var(--muted);text-align:center;padding:10px;">Sin observaciones registradas en ${horaActual} (${formatearFechaLegible(fechaActual)}).</p>`;
+                return;
+            }
+            container.innerHTML = notasHora.map(n => `
+                <div class="note-entry">
+                    <div class="note-entry-meta">🕒 ${horaActual} (${n.horaRegistro}) · 👨‍🏫 ${n.docente}</div>
+                    <div>${n.texto}</div>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('novedad-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const texto = document.getElementById('nov-texto').value.trim();
+            if (!texto || !alumnoNovedadId) return;
+
+            const est = students.find(s => s.id === alumnoNovedadId);
+            if (!est) return;
+
+            const docente = document.getElementById('docente-nombre-input').value.trim() || 'Docente de turno';
+            const horaReloj = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+
+            if (!obsByDateHourStudent[fechaActual]) obsByDateHourStudent[fechaActual] = {};
+            if (!obsByDateHourStudent[fechaActual][horaActual]) obsByDateHourStudent[fechaActual][horaActual] = {};
+            if (!obsByDateHourStudent[fechaActual][horaActual][est.id]) obsByDateHourStudent[fechaActual][horaActual][est.id] = [];
+
+            obsByDateHourStudent[fechaActual][horaActual][est.id].unshift({
+                texto: texto,
+                docente: docente,
+                horaRegistro: horaReloj
+            });
+
+            historialGlobal.unshift({
+                id: Date.now(),
+                estudianteId: est.id,
+                estudiante: est.nombres,
+                curso: est.curso,
+                jornada: est.jornada || jornadaActual,
+                fecha: fechaActual,
+                horaClase: horaActual,
+                horaRegistro: horaReloj,
+                docente: docente,
+                tipo: 'Observación Manual',
+                detalle: texto
+            });
+
+            guardarTodoStorage();
+            renderObservacionesDeEstaHora(est);
+            document.getElementById('nov-texto').value = '';
+            renderAll();
+        });
+
+        function cerrarModalNovedad() {
+            document.getElementById('novedad-modal').classList.add('hidden');
+            alumnoNovedadId = null;
+        }
+    </script>
+</body>
+</html>

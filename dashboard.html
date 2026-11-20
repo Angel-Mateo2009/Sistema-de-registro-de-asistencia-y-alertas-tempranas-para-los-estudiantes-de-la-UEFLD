@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - U.E.F. La Dolorosa</title>
+    <style>
+        :root {
+            --navy: #0b1e3b; --navy-light: #16325c; --crimson: #a61c2b;
+            --red: #dc2626; --red-border: #fecaca; --gold: #eab308;
+            --green: #16a34a; --amber: #d97706; --blue: #2563eb;
+            --bg: #f1f5f9; --text: #1e293b; --muted: #64748b; --border: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--bg); color: var(--text); }
+        .hidden { display: none !important; }
+        .app-layout { display: flex; min-height: 100vh; }
+
+        .sidebar { width: 255px; background: var(--navy); color: white; display: flex; flex-direction: column; flex-shrink: 0; }
+        .sidebar-brand-btn {
+            width: 100%; background: transparent; border: none;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding: 18px 16px; display: flex; align-items: center; gap: 12px;
+            color: white; text-align: left; cursor: pointer; transition: 0.2s;
+        }
+        .sidebar-brand-btn:hover { background: rgba(166, 28, 43, 0.42); border-bottom-color: rgba(220, 38, 38, 0.7); }
+        .brand-logo { width: 46px; height: 46px; border-radius: 8px; object-fit: cover; border: 1.5px solid var(--gold); flex-shrink: 0; }
+        .sidebar-brand-btn h3 { font-size: 0.88rem; line-height: 1.2; color: white; }
+        .sidebar-brand-btn small { display: block; color: #94a3b8; font-size: 0.74rem; margin-top: 2px; }
+
+        .menu-section-title { padding: 18px 20px 8px; font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 1px; }
+        .sidebar-nav { padding: 0 12px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .nav-link {
+            display: flex; align-items: center; justify-content: space-between; text-decoration: none;
+            color: #cbd5e1; padding: 11px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; transition: 0.2s;
+        }
+        .nav-link:hover { background: rgba(255,255,255,0.06); color: white; }
+        .nav-link.active { background: var(--navy-light); color: white; border: 1px solid rgba(234, 179, 8, 0.5); }
+
+        .content-wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        .topbar {
+            background: white; height: 62px; padding: 0 24px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        }
+        .topbar h2 { font-size: 1.05rem; color: var(--navy); }
+        .topbar-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+        .jornada-pill {
+            background: #fef3c7; color: #92400e; border: 1px solid #f59e0b;
+            padding: 5px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+        }
+        .date-input-top {
+            border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 8px;
+            font-size: 0.82rem; color: var(--navy); font-weight: 600;
+        }
+        .date-legible-pill {
+            font-size: 0.8rem; font-weight: 700; color: var(--navy);
+            background: #f1f5f9; padding: 5px 10px; border-radius: 6px;
+        }
+        .avatar-circle {
+            width: 32px; height: 32px; border-radius: 50%; background: var(--navy); color: white;
+            display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700;
+        }
+        .main-body { padding: 22px 24px; }
+
+        .dashboard-grid { display: grid; grid-template-columns: 1.65fr 1fr; gap: 20px; align-items: start; }
+        @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+        .section-card {
+            background: white; border-radius: 12px; padding: 18px 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid var(--border); margin-bottom: 20px;
+        }
+        .section-title {
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 0.88rem; font-weight: 800; color: var(--navy); margin-bottom: 14px; gap: 8px;
+        }
+        .title-with-dot { display: flex; align-items: center; gap: 8px; }
+        .dot-red { width: 9px; height: 9px; border-radius: 50%; background: var(--red); display: inline-block; }
+        .dot-amber { width: 9px; height: 9px; border-radius: 50%; background: var(--amber); display: inline-block; }
+
+        .critical-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+        .critical-card {
+            background: #fff5f5; border: 1px solid var(--red-border); border-radius: 10px;
+            padding: 14px; cursor: pointer; transition: 0.2s;
+        }
+        .critical-card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(220,38,38,0.12); }
+        .course-pill-red {
+            display: inline-block; background: var(--red); color: white; font-size: 0.7rem;
+            font-weight: 700; padding: 3px 8px; border-radius: 5px; margin-bottom: 8px;
+        }
+        .critical-card h4 { color: var(--navy); font-size: 0.95rem; margin-bottom: 4px; }
+        .critical-card p { color: #b91c1c; font-size: 0.8rem; font-weight: 600; }
+
+        .daily-courses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 14px; }
+        .course-stat-card { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 14px; }
+        .course-stat-card h4 { color: var(--amber); font-size: 0.95rem; margin-bottom: 8px; }
+        .course-stat-card div { font-size: 0.82rem; margin-bottom: 3px; }
+
+        .donut-wrapper { display: flex; align-items: center; justify-content: space-around; gap: 16px; padding: 10px 0; flex-wrap: wrap; }
+        .donut-ring {
+            width: 162px; height: 162px; border-radius: 50%;
+            background: conic-gradient(#16a34a 0deg 360deg);
+            display: flex; align-items: center; justify-content: center; position: relative;
+            transition: background 0.35s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            flex-shrink: 0;
+        }
+        .donut-ring::before { content: ""; position: absolute; width: 108px; height: 108px; background: white; border-radius: 50%; }
+        .donut-center { position: relative; text-align: center; padding: 0 6px; }
+        .donut-center strong { display: block; font-size: 1.45rem; color: var(--navy); line-height: 1.05; }
+        .donut-center small { font-size: 0.63rem; color: var(--muted); font-weight: 700; display: block; margin-top: 2px; }
+        .donut-legend { display: flex; flex-direction: column; gap: 7px; font-size: 0.81rem; flex: 1; min-width: 175px; }
+        .legend-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            font-weight: 600; padding: 4px 8px; border-radius: 6px; cursor: pointer; transition: 0.15s;
+        }
+        .legend-item:hover { background: #f1f5f9; }
+        .legend-left { display: flex; align-items: center; gap: 8px; }
+        .legend-box { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+        .legend-val { font-size: 0.76rem; color: var(--muted); font-weight: 700; }
+        .donut-filter-select {
+            border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 8px;
+            font-size: 0.76rem; font-weight: 700; color: var(--navy); background: #f8fafc;
+        }
+
+        .count-badge { background: #e2e8f0; color: var(--navy); font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+        .novedades-list { display: flex; flex-direction: column; gap: 12px; }
+        .novedad-item { padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #f8fafc; cursor: pointer; }
+        .novedad-top { display: flex; justify-content: space-between; margin-bottom: 4px; gap: 8px; }
+        .novedad-name { display: flex; align-items: center; gap: 7px; font-size: 0.84rem; font-weight: 700; color: var(--navy); }
+        .novedad-time { font-size: 0.73rem; color: var(--muted); }
+        .novedad-desc { font-size: 0.8rem; color: #475569; }
+
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+        .modal-card { background: white; width: 100%; max-width: 520px; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .modal-header { background: var(--navy); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { font-size: 0.95rem; }
+        .close-btn { background: none; border: none; color: #cbd5e1; font-size: 1.2rem; cursor: pointer; }
+        .modal-body { padding: 20px; }
+        .alert-detail-box { background: #fff5f5; border: 1px solid #fecaca; border-radius: 10px; padding: 15px; margin-bottom: 14px; }
+        .alert-detail-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .tag-critica { background: var(--red); color: white; font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; }
+        .alert-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; font-size: 0.86rem; }
+        .observation-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-size: 0.85rem; }
+        .notify-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+        .notify-box label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+        .notify-box textarea {
+            width: 100%; padding: 9px 10px; border: 1px solid #cbd5e1; border-radius: 6px;
+            font-size: 0.83rem; line-height: 1.4; color: var(--text); resize: vertical;
+        }
+        .notify-status { font-size: 0.76rem; color: var(--green); font-weight: 700; margin-top: 6px; display: none; }
+
+        .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+        .btn-outline { background: white; border: 1px solid #cbd5e1; padding: 9px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.83rem; }
+        .btn-navy { background: var(--navy); color: white; border: none; padding: 9px 14px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 0.83rem; }
+        .btn-whatsapp {
+            background: #16a34a; color: white; border: none; padding: 9px 15px; border-radius: 6px;
+            font-weight: 700; cursor: pointer; font-size: 0.83rem; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-whatsapp:hover { background: #15803d; }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <button type="button" class="sidebar-brand-btn" onclick="cerrarSesion()">
+                <img src="uefld.webp" alt="Escudo U.E.F. La Dolorosa" class="brand-logo">
+                <div>
+                    <h3>U.E.F. LA DOLOROSA</h3>
+                    <small>Fiscomisional · Admin</small>
+                </div>
+            </button>
+
+            <div class="menu-section-title">MENÚ PRINCIPAL</div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-link active"><span>📊 DASHBOARD</span></a>
+                <a href="cursos.html" class="nav-link"><span>🗄️ CURSOS / BASE DATOS</span></a>
+                <a href="novedades.html" class="nav-link"><span>📋 HISTORIAL POR CURSOS</span></a>
+            </nav>
+        </aside>
+
+        <div class="content-wrapper">
+            <header class="topbar">
+                <h2>☰ &nbsp; DASHBOARD GLOBAL DE ALERTAS</h2>
+                <div class="topbar-right">
+                    <span class="date-legible-pill" id="dash-fecha-legible"></span>
+                    <input type="date" id="dashboard-date" class="date-input-top" onchange="onDashboardDateChange()">
+                    <button id="badge-jornada" class="jornada-pill" onclick="alternarJornada()">☀️ Jornada Matutina</button>
+                    <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:0.88rem;color:var(--navy);">
+                        <div class="avatar-circle">AD</div>
+                        <span>Rectorado / Admin</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="main-body">
+                <div class="dashboard-grid">
+                    <div>
+                        <div class="section-card">
+                            <div class="section-title">
+                                <div class="title-with-dot"><span class="dot-red"></span><span>ALERTAS CRÍTICAS POR INASISTENCIA</span></div>
+                            </div>
+                            <div class="critical-grid" id="critical-cards"></div>
+                        </div>
+
+                        <div class="section-card">
+                            <div class="section-title">
+                                <div class="title-with-dot"><span class="dot-amber"></span><span>RESUMEN DIARIO POR CURSO</span></div>
+                            </div>
+                            <div class="daily-courses-grid" id="daily-courses"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="section-card">
+                            <div class="section-title">
+                                <span>PASTEL POR CURSOS</span>
+                                <select id="donut-metric-mode" class="donut-filter-select" onchange="renderAll()">
+                                    <option value="presentes">Asistencia por Curso</option>
+                                    <option value="novedades">Faltas / Fugas por Curso</option>
+                                    <option value="matriculados">Alumnos por Curso</option>
+                                </select>
+                            </div>
+                            <div class="donut-wrapper">
+                                <div class="donut-ring" id="donut-ring">
+                                    <div class="donut-center">
+                                        <strong id="donut-pct">100%</strong>
+                                        <small id="donut-sub">ASISTENCIA</small>
+                                    </div>
+                                </div>
+                                <div class="donut-legend" id="donut-legend"></div>
+                            </div>
+                        </div>
+
+                        <div class="section-card">
+                            <div class="section-title">
+                                <span>ÚLTIMOS REGISTROS DEL HISTORIAL</span>
+                                <span class="count-badge" id="nov-count">0</span>
+                            </div>
+                            <div class="novedades-list" id="novedades-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="alert-modal" class="modal-backdrop hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modal-title">🔔 DETALLE</h3>
+                <button class="close-btn" onclick="document.getElementById('alert-modal').classList.add('hidden')">✕</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer" id="modal-footer"></div>
+        </div>
+    </div>
+
+    <script>
+        function cerrarSesion() {
+            localStorage.removeItem('uefld_jornada');
+            window.location.href = 'index.html';
+        }
+
+        const DEFAULT_CURSOS = {
+            Matutina: ["10mo A", "10mo B", "1ro BGU A", "2do BGU A", "3ro BGU A"],
+            Vespertina: ["8vo A", "9no A", "10mo C", "1ro BGU B", "2do BGU B"]
+        };
+
+        const CURSO_COLORES = ["#16a34a", "#2563eb", "#eab308", "#a61c2b", "#0d9488", "#7c3aed", "#ea580c", "#0284c7"];
+
+        const DEFAULT_STUDENTS = [
+            { id: 1, cedula: "0105487921", nombres: "MATEO VERA", curso: "10mo B", jornada: "Matutina", representante: "Jorge Vera", telefono: "0996547890", faltas_acumuladas: 4 },
+            { id: 2, cedula: "0107123456", nombres: "ANDRÉS TORRES", curso: "1ro BGU A", jornada: "Matutina", representante: "Elena Torres", telefono: "0998877665", faltas_acumuladas: 3 },
+            { id: 3, cedula: "0106987412", nombres: "SOFÍA MENDOZA", curso: "10mo A", jornada: "Matutina", representante: "María Mendoza", telefono: "0987654321", faltas_acumuladas: 2 },
+            { id: 4, cedula: "0105998877", nombres: "CAMILA ORTIZ", curso: "2do BGU A", jornada: "Matutina", representante: "Luis Ortiz", telefono: "0981122334", faltas_acumuladas: 0 },
+            { id: 5, cedula: "0106112233", nombres: "SEBASTIÁN LÓPEZ", curso: "3ro BGU A", jornada: "Matutina", representante: "Marco López", telefono: "0993322110", faltas_acumuladas: 1 },
+            { id: 6, cedula: "0108112233", nombres: "CARLOS JIMÉNEZ", curso: "10mo C", jornada: "Vespertina", representante: "Rosa Jiménez", telefono: "0991112233", faltas_acumuladas: 4 },
+            { id: 7, cedula: "0108445566", nombres: "VALERIA SALAZAR", curso: "1ro BGU B", jornada: "Vespertina", representante: "Pedro Salazar", telefono: "0984445566", faltas_acumuladas: 3 },
+            { id: 8, cedula: "0108990011", nombres: "DANIELA PAREDES", curso: "8vo A", jornada: "Vespertina", representante: "Lucía Paredes", telefono: "0976543210", faltas_acumuladas: 0 },
+            { id: 9, cedula: "0108776655", nombres: "MATEO GÓMEZ", curso: "9no A", jornada: "Vespertina", representante: "Raúl Gómez", telefono: "0989998877", faltas_acumuladas: 1 }
+        ];
+
+        function getTodayISO() {
+            const d = new Date();
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function formatearFechaLegible(isoStr) {
+            const meses = [
+                "enero", "febrero", "marzo", "abril", "mayo", "junio",
+                "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+            ];
+            const valida = (isoStr && /^\d{4}-\d{2}-\d{2}$/.test(isoStr)) ? isoStr : getTodayISO();
+            const [yyyy, mm, dd] = valida.split('-').map(Number);
+            if (!dd || dd < 1 || !mm || mm < 1 || mm > 12) {
+                const hoy = new Date();
+                return `${hoy.getDate()} de ${meses[hoy.getMonth()]} de ${hoy.getFullYear()}`;
+            }
+            return `${dd} de ${meses[mm - 1]} de ${yyyy}`;
+        }
+
+        function formatearTelefonoEcuador(tel) {
+            let digits = String(tel || '').replace(/\D/g, '');
+            if (digits.startsWith('0') && digits.length === 10) {
+                digits = '593' + digits.substring(1);
+            } else if (!digits.startsWith('593') && digits.length === 9) {
+                digits = '593' + digits;
+            }
+            return digits;
+        }
+
+        let jornadaActual = localStorage.getItem('uefld_jornada') || 'Matutina';
+
+        function getCursosPorSeccion() {
+            try {
+                const c = JSON.parse(localStorage.getItem('uefld_cursos_v3'));
+                if (c && typeof c === 'object') return c;
+            } catch (_) {}
+            return DEFAULT_CURSOS;
+        }
+
+        function getStudents() {
+            try {
+                const s = JSON.parse(localStorage.getItem('uefld_students_v3'));
+                if (Array.isArray(s)) return s;
+            } catch (_) {}
+            return DEFAULT_STUDENTS;
+        }
+
+        function getAttendanceRecords() {
+            try {
+                return JSON.parse(localStorage.getItem('uefld_asistencia_v3')) || {};
+            } catch (_) { return {}; }
+        }
+
+        function getHistorialRecords() {
+            try {
+                return JSON.parse(localStorage.getItem('uefld_historial_v3')) || [];
+            } catch (_) { return []; }
+        }
+
+        function actualizarBadgeJornada() {
+            const badge = document.getElementById('badge-jornada');
+            badge.textContent = jornadaActual === 'Vespertina' ? '🌇 Jornada Vespertina' : '☀️ Jornada Matutina';
+        }
+
+        function alternarJornada() {
+            jornadaActual = jornadaActual === 'Matutina' ? 'Vespertina' : 'Matutina';
+            localStorage.setItem('uefld_jornada', jornadaActual);
+            actualizarBadgeJornada();
+            renderAll();
+        }
+
+        function onDashboardDateChange() {
+            const input = document.getElementById('dashboard-date');
+            if (!input.value || !/^\d{4}-\d{2}-\d{2}$/.test(input.value)) {
+                input.value = getTodayISO();
+            }
+            document.getElementById('dash-fecha-legible').textContent = formatearFechaLegible(input.value);
+            renderAll();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const hoy = getTodayISO();
+            document.getElementById('dashboard-date').value = hoy;
+            document.getElementById('dash-fecha-legible').textContent = formatearFechaLegible(hoy);
+            actualizarBadgeJornada();
+            renderAll();
+        });
+
+        function getUltimoEstadoDelDia(estId, fechaISO, attendanceMap) {
+            const dayObj = attendanceMap[fechaISO] || {};
+            const horas = ['7ma Hora', '6ta Hora', '5ta Hora', '4ta Hora', '3ra Hora', '2da Hora', '1ra Hora'];
+            for (const h of horas) {
+                if (dayObj[h] && dayObj[h][estId]) return dayObj[h][estId];
+            }
+            if (estId === 1 || estId === 6) return 'Ausente';
+            if (estId === 2 || estId === 7) return 'Fuga';
+            if (estId === 3 || estId === 9) return 'Atraso';
+            return 'Presente';
+        }
+
+        function renderAll() {
+            const inputDate = document.getElementById('dashboard-date');
+            const fechaSel = (inputDate.value && /^\d{4}-\d{2}-\d{2}$/.test(inputDate.value)) ? inputDate.value : getTodayISO();
+            const students = getStudents();
+            const attendanceMap = getAttendanceRecords();
+            const historial = getHistorialRecords();
+            const cursosMap = getCursosPorSeccion();
+
+            const estSeccion = students.filter(s => (s.jornada || 'Matutina') === jornadaActual);
+            const cursos = cursosMap[jornadaActual] || [];
+
+            const modoPastel = document.getElementById('donut-metric-mode').value;
+            const datosCursos = cursos.map((curso, idx) => {
+                const alumnos = estSeccion.filter(s => s.curso === curso);
+                const presentes = alumnos.filter(s => {
+                    const st = getUltimoEstadoDelDia(s.id, fechaSel, attendanceMap);
+                    return st === 'Presente' || st === 'Atraso';
+                }).length;
+                const novedades = alumnos.filter(s => {
+                    const st = getUltimoEstadoDelDia(s.id, fechaSel, attendanceMap);
+                    return st === 'Ausente' || st === 'Fuga';
+                }).length;
+
+                let valor = 0;
+                if (modoPastel === 'presentes') valor = presentes;
+                else if (modoPastel === 'novedades') valor = novedades;
+                else valor = alumnos.length;
+
+                return {
+                    curso,
+                    color: CURSO_COLORES[idx % CURSO_COLORES.length],
+                    totalAlumnos: alumnos.length,
+                    presentes,
+                    novedades,
+                    valor
+                };
+            });
+
+            const sumaValores = datosCursos.reduce((acc, c) => acc + c.valor, 0);
+            const ring = document.getElementById('donut-ring');
+
+            if (sumaValores === 0) {
+                ring.style.background = `conic-gradient(#cbd5e1 0deg 360deg)`;
+                document.getElementById('donut-pct').textContent = `0`;
+                document.getElementById('donut-sub').textContent = modoPastel === 'novedades' ? 'SIN FALTAS' : 'SIN DATOS';
+            } else {
+                let acumDeg = 0;
+                const stops = datosCursos.map(item => {
+                    const deg = (item.valor / sumaValores) * 360;
+                    const start = acumDeg;
+                    const end = acumDeg + deg;
+                    acumDeg = end;
+                    return `${item.color} ${start.toFixed(1)}deg ${end.toFixed(1)}deg`;
+                });
+                ring.style.background = `conic-gradient(${stops.join(', ')})`;
+
+                if (modoPastel === 'presentes') {
+                    const totalMat = estSeccion.length || 1;
+                    const pctGlobal = Math.round((sumaValores / totalMat) * 100);
+                    document.getElementById('donut-pct').textContent = `${pctGlobal}%`;
+                    document.getElementById('donut-sub').textContent = `ASISTENCIA`;
+                } else if (modoPastel === 'novedades') {
+                    document.getElementById('donut-pct').textContent = `${sumaValores}`;
+                    document.getElementById('donut-sub').textContent = `FALTAS / FUGAS`;
+                } else {
+                    document.getElementById('donut-pct').textContent = `${sumaValores}`;
+                    document.getElementById('donut-sub').textContent = `ESTUDIANTES`;
+                }
+            }
+
+            document.getElementById('donut-legend').innerHTML = datosCursos.map(item => {
+                const pctCurso = sumaValores > 0 ? Math.round((item.valor / sumaValores) * 100) : 0;
+                const detalle = modoPastel === 'presentes'
+                    ? `${item.presentes}/${item.totalAlumnos} (${pctCurso}%)`
+                    : modoPastel === 'novedades'
+                        ? `${item.novedades} nov. (${pctCurso}%)`
+                        : `${item.totalAlumnos} est. (${pctCurso}%)`;
+                const cursoEscapado = item.curso.replace(/'/g, "\\'");
+
+                return `
+                    <div class="legend-item" onclick="abrirDetalleCurso('${cursoEscapado}')">
+                        <div class="legend-left">
+                            <span class="legend-box" style="background:${item.color};"></span>
+                            <span>${item.curso}</span>
+                        </div>
+                        <span class="legend-val">${detalle}</span>
+                    </div>
+                `;
+            }).join('');
+
+            const criticos = estSeccion.filter(e => {
+                const st = getUltimoEstadoDelDia(e.id, fechaSel, attendanceMap);
+                return e.faltas_acumuladas >= 3 || st === 'Ausente' || st === 'Fuga';
+            });
+            document.getElementById('critical-cards').innerHTML = criticos.length
+                ? criticos.map(e => `
+                    <div class="critical-card" onclick="openModal(${e.id})">
+                        <span class="course-pill-red">${e.curso.toUpperCase()}</span>
+                        <h4>${e.nombres.toUpperCase()}</h4>
+                        <p>${e.faltas_acumuladas} ausencias acumuladas</p>
+                    </div>
+                `).join('')
+                : `<p style="font-size:0.85rem;color:var(--muted);">Sin alertas críticas en esta sección.</p>`;
+
+            document.getElementById('daily-courses').innerHTML = datosCursos.map(d => {
+                const cursoEscapado = d.curso.replace(/'/g, "\\'");
+                return `
+                    <div class="course-stat-card" style="cursor:pointer;" onclick="abrirDetalleCurso('${cursoEscapado}')">
+                        <h4>${d.curso}</h4>
+                        <div>Presentes: <strong>${d.presentes} / ${d.totalAlumnos}</strong></div>
+                        <div>Ausentes / Fugas: <strong>${d.novedades}</strong></div>
+                    </div>
+                `;
+            }).join('');
+
+            const novSeccion = historial.filter(h => (h.jornada || 'Matutina') === jornadaActual);
+            document.getElementById('nov-count').textContent = novSeccion.length;
+            document.getElementById('novedades-list').innerHTML = novSeccion.length
+                ? novSeccion.slice(0, 5).map(n => `
+                    <div class="novedad-item" onclick="window.location.href='novedades.html'">
+                        <div class="novedad-top">
+                            <div class="novedad-name">
+                                <span class="${n.tipo === 'Ausente' || n.tipo === 'Fuga' ? 'dot-red' : 'dot-amber'}"></span>
+                                <span>${n.estudiante} (${n.curso})</span>
+                            </div>
+                            <span class="novedad-time">${formatearFechaLegible(n.fecha)} · ${n.horaClase}</span>
+                        </div>
+                        <p class="novedad-desc"><strong>[${n.tipo}]</strong> ${n.detalle}</p>
+                    </div>
+                `).join('')
+                : `<p style="font-size:0.83rem;color:var(--muted);">No hay movimientos registrados aún.</p>`;
+        }
+
+        function abrirDetalleCurso(curso) {
+            const fechaSel = document.getElementById('dashboard-date').value || getTodayISO();
+            const attendanceMap = getAttendanceRecords();
+            const alumnos = getStudents().filter(s => (s.jornada || 'Matutina') === jornadaActual && s.curso === curso);
+
+            document.getElementById('modal-title').textContent = `📊 RESUMEN DEL CURSO · ${curso} (${jornadaActual})`;
+            document.getElementById('modal-body').innerHTML = `
+                <div class="observation-box" style="margin-bottom:12px;">
+                    <strong>Fecha consultada:</strong> ${formatearFechaLegible(fechaSel)} · <strong>Total estudiantes:</strong> ${alumnos.length}
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    ${alumnos.length ? alumnos.map(a => {
+                        const st = getUltimoEstadoDelDia(a.id, fechaSel, attendanceMap);
+                        return `<div style="display:flex;justify-content:space-between;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;">
+                            <strong>${a.nombres}</strong>
+                            <span>${st} (${a.faltas_acumuladas} faltas acum.)</span>
+                        </div>`;
+                    }).join('') : '<p style="font-size:0.85rem;color:var(--muted);">No hay estudiantes registrados en este curso.</p>'}
+                </div>
+            `;
+            document.getElementById('modal-footer').innerHTML = `
+                <button class="btn-outline" onclick="document.getElementById('alert-modal').classList.add('hidden')">Cerrar</button>
+                <button class="btn-navy" onclick="window.location.href='cursos.html'">Ir a Cursos</button>
+            `;
+            document.getElementById('alert-modal').classList.remove('hidden');
+        }
+
+        function openModal(id) {
+            const students = getStudents();
+            const est = students.find(s => s.id === id) || students[0];
+            if (!est) return;
+            const historial = getHistorialRecords();
+            const histAlumno = historial.filter(h => h.estudianteId === est.id);
+
+            const ultimoEvento = histAlumno.length
+                ? `${histAlumno[0].tipo} (${histAlumno[0].fecha} - ${histAlumno[0].horaClase}): ${histAlumno[0].detalle}`
+                : `Acumula ${est.faltas_acumuladas} inasistencias registradas en la jornada ${est.jornada}.`;
+
+            const mensajePredeterminado =
+                `Estimado/a ${est.representante}, le saludamos de Inspección General de la U.E.F. "La Dolorosa". ` +
+                `Le informamos una novedad respecto a su representado/a ${est.nombres} (${est.curso} - Jornada ${est.jornada}): ` +
+                `${ultimoEvento}. Por favor acercarse o comunicarse con la institución.`;
+
+            document.getElementById('modal-title').textContent = `🔔 DETALLE DE ALERTA • ${est.nombres.toUpperCase()}`;
+            document.getElementById('modal-body').innerHTML = `
+                <div class="alert-detail-box">
+                    <div class="alert-detail-top">
+                        <h4>${est.nombres.toUpperCase()} (${est.curso})</h4>
+                        <span class="tag-critica">ALERTA CRÍTICA</span>
+                    </div>
+                    <div class="alert-detail-grid">
+                        <div><strong>Jornada:</strong> ${est.jornada}</div>
+                        <div><strong>Faltas Acum.:</strong> ${est.faltas_acumuladas}</div>
+                        <div><strong>Representante:</strong> ${est.representante}</div>
+                        <div><strong>Celular:</strong> ${est.telefono}</div>
+                    </div>
+                </div>
+
+                <div class="notify-box">
+                    <label for="dash-mensaje-rep">✍️ Notificación real para el representante (editable):</label>
+                    <textarea id="dash-mensaje-rep" rows="4">${mensajePredeterminado}</textarea>
+                    <div class="notify-status" id="dash-notify-status">✓ Notificación enviada y registrada en el historial del curso.</div>
+                </div>
+            `;
+
+            document.getElementById('modal-footer').innerHTML = `
+                <button class="btn-outline" onclick="document.getElementById('alert-modal').classList.add('hidden')">Cerrar</button>
+                <button class="btn-navy" id="dash-btn-sms">💬 Enviar SMS</button>
+                <button class="btn-whatsapp" id="dash-btn-wa">📲 Notificar por WhatsApp</button>
+            `;
+
+            const guardarEnvio = (canal, texto) => {
+                const hoy = getTodayISO();
+                const hora = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+                historial.unshift({
+                    id: Date.now(),
+                    estudianteId: est.id,
+                    estudiante: est.nombres,
+                    curso: est.curso,
+                    jornada: est.jornada || jornadaActual,
+                    fecha: hoy,
+                    horaClase: 'Inspección',
+                    horaRegistro: hora,
+                    docente: 'Inspección General',
+                    tipo: 'Observación Manual',
+                    detalle: `Notificación real enviada vía ${canal} a ${est.representante} (${est.telefono}): "${texto}"`
+                });
+                localStorage.setItem('uefld_historial_v3', JSON.stringify(historial));
+                document.getElementById('dash-notify-status').style.display = 'block';
+                renderAll();
+            };
+
+            document.getElementById('dash-btn-wa').onclick = () => {
+                const texto = document.getElementById('dash-mensaje-rep').value.trim();
+                const numeroIntl = formatearTelefonoEcuador(est.telefono);
+                guardarEnvio('WhatsApp', texto);
+                window.open(`https://wa.me/${numeroIntl}?text=${encodeURIComponent(texto)}`, '_blank');
+            };
+
+            document.getElementById('dash-btn-sms').onclick = () => {
+                const texto = document.getElementById('dash-mensaje-rep').value.trim();
+                const numeroLocal = String(est.telefono || '').replace(/\D/g, '');
+                guardarEnvio('SMS', texto);
+                window.location.href = `sms:${numeroLocal}?body=${encodeURIComponent(texto)}`;
+            };
+
+            document.getElementById('alert-modal').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
